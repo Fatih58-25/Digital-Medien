@@ -489,6 +489,63 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
+--- !u!1001 &1720276887832188377
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3044010273898455534, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_Name
+      value: Player_Modul
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -189.47527
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.3973
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 369.48553
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3952927698344224339, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
 --- !u!1001 &2735008166676087685
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -511,11 +568,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 451830400427150204, guid: 730bb09ddf182e24dbd13675a0562342, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: 451830400427150204, guid: 730bb09ddf182e24dbd13675a0562342, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: 451830400427150204, guid: 730bb09ddf182e24dbd13675a0562342, type: 3}
       propertyPath: m_LocalRotation.y
@@ -527,7 +584,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 451830400427150204, guid: 730bb09ddf182e24dbd13675a0562342, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 451830400427150204, guid: 730bb09ddf182e24dbd13675a0562342, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -539,7 +596,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3319481999435664683, guid: 730bb09ddf182e24dbd13675a0562342, type: 3}
       propertyPath: m_Name
-      value: Player_Modul
+      value: NPC_Modul
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -729,3 +786,4 @@ SceneRoots:
   - {fileID: 6119425577829660643}
   - {fileID: 734440787753713840}
   - {fileID: 6343717464513636658}
+  - {fileID: 1720276887832188377}
