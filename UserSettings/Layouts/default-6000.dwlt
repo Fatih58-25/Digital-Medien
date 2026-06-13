@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1910
     height: 1102
   m_ShowMode: 4
-  m_Title: Scene
+  m_Title: Inspector
   m_RootView: {fileID: 2}
   m_MinSize: {x: 875, y: 300}
   m_MaxSize: {x: 10000, y: 10000}
@@ -274,8 +274,8 @@ MonoBehaviour:
     y: 0
     width: 427
     height: 1046
-  m_MinSize: {x: 275, y: 50}
-  m_MaxSize: {x: 4000, y: 4000}
+  m_MinSize: {x: 276, y: 76}
+  m_MaxSize: {x: 4001, y: 4026}
   m_ActualView: {fileID: 19}
   m_Panes:
   - {fileID: 19}
@@ -375,6 +375,8 @@ MonoBehaviour:
   m_AnimatorController: {fileID: 9100000, guid: 021a90992d3212c769eb401aa3f2f776, type: 2}
   m_BreadCrumbs:
   - m_Target: {fileID: 3756963877853389744, guid: 021a90992d3212c769eb401aa3f2f776, type: 2}
+    m_ScrollPosition: {x: 0, y: 0}
+  - m_Target: {fileID: -3577059929338244499, guid: 021a90992d3212c769eb401aa3f2f776, type: 2}
     m_ScrollPosition: {x: 0, y: 0}
   stateMachineGraph: {fileID: 0}
   stateMachineGraphGUI: {fileID: 0}
@@ -565,10 +567,10 @@ MonoBehaviour:
     m_OverlaysVisible: 1
   m_SceneHierarchy:
     m_TreeViewState:
-      scrollPos: {x: 0, y: 1340}
-      m_SelectedIDs: 
-      m_LastClickedID: 0
-      m_ExpandedIDs: 06eeffff0aeeffff0eeeffffa8f8ffff14fbffff
+      scrollPos: {x: 0, y: 0}
+      m_SelectedIDs: 78ae0000
+      m_LastClickedID: 44664
+      m_ExpandedIDs: 46d9ffff5ad9ffff50e9ffffbcfaffffc2faffff
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1186,9 +1188,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: -20.541359, y: 65.110344, z: 471.76233}
+    m_Target: {x: -5.83444, y: 67.54238, z: 487.42972}
     speed: 2
-    m_Value: {x: -20.541359, y: 65.110344, z: 471.76233}
+    m_Value: {x: -5.83444, y: 67.54238, z: 487.42972}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1234,13 +1236,13 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: -0.05040329, y: 0.89551365, z: -0.10610936, w: -0.42954946}
+    m_Target: {x: 0.10213892, y: -0.89732605, z: 0.312928, w: 0.2945148}
     speed: 2
-    m_Value: {x: -0.050395183, y: 0.8977988, z: -0.107743144, w: -0.4240391}
+    m_Value: {x: 0.09930411, y: -0.8998102, z: 0.31378916, w: 0.28638563}
   m_Size:
-    m_Target: 13.213287
+    m_Target: 2.0820873
     speed: 2
-    m_Value: 13.213287
+    m_Value: 1.992428
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -1321,7 +1323,7 @@ MonoBehaviour:
     m_SkipHidden: 1
     m_SearchArea: 1
     m_Folders:
-    - Assets/Enemy/Pro Sword and Shield Pack
+    - Assets/Scripts
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1331,16 +1333,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 46
   m_LastFolders:
-  - Assets/Enemy/Pro Sword and Shield Pack
+  - Assets/Scripts
   m_LastFoldersGridSize: 46
   m_LastProjectPath: /home/fatih/Projects/Digital-Medien
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 0}
-    m_SelectedIDs: b4d50000
-    m_LastClickedID: 54708
-    m_ExpandedIDs: 0000000000d3000002d3000004d3000006d30000b2d5000000ca9a3b
+    scrollPos: {x: 0, y: 143}
+    m_SelectedIDs: 04d60000
+    m_LastClickedID: 54788
+    m_ExpandedIDs: 0000000030d3000032d3000034d3000036d3000038d300003ad3000000ca9a3b
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1369,7 +1371,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 0000000000d3000002d3000004d3000006d30000
+    m_ExpandedIDs: 0000000030d3000032d3000034d3000036d3000038d300003ad30000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1397,7 +1399,7 @@ MonoBehaviour:
   m_ListAreaState:
     m_SelectedInstanceIDs: 
     m_LastClickedInstanceID: 0
-    m_HadKeyboardFocusLastEvent: 0
+    m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs: c62300003202010038cd000062ce00004a1701005ece0000a42801006cd90000e6410100d83e020044d70000bee0000066db000066da00007c0c0100dcc702006a910200b2150300b4150300c2ea000062c90000ecf0000062d4000032870100bccc0000b202000054d1000066fc0000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
@@ -1415,7 +1417,7 @@ MonoBehaviour:
       m_OriginalEventType: 11
       m_IsRenamingFilename: 1
       m_TrimLeadingAndTrailingWhitespace: 0
-      m_ClientGUIView: {fileID: 0}
+      m_ClientGUIView: {fileID: 10}
     m_CreateAssetUtility:
       m_EndAction: {fileID: 0}
       m_InstanceID: 0
@@ -1450,7 +1452,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 5
     y: 740
-    width: 1419
+    width: 1482
     height: 409
   m_SerializedDataModeController:
     m_DataMode: 0
