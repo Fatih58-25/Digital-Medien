@@ -93,6 +93,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 9100000, guid: 021a90992d3212c769eb401aa3f2f776, type: 2}
     - target: {fileID: 5866666021909216657, guid: e872afd81308120a69a597022570fab9, type: 3}
+      propertyPath: m_AnimatePhysics
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: e872afd81308120a69a597022570fab9, type: 3}
       propertyPath: m_ApplyRootMotion
       value: 0
       objectReference: {fileID: 0}
@@ -132,3 +136,5 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  walkSpeed: 1.5
+  runSpeed: 4.5

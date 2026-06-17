@@ -50,18 +50,12 @@ public class SkeletonAI : MonoBehaviour
             StartCoroutine(DecideNextMove());
         }
 
-        // ANIMATOR FEEDBACK: 
-        // Şövalye hareket ediyorsa, animatördeki Speed değerini yumuşakça 0.5f (Walk) yapıyoruz.
-        // Duruyorsa 0f (Idle) yapıyoruz.
-        if (agent.velocity.magnitude > 0.1f)
-        {
-            // Eğer devriyedeysek hızı 0.5f'e sabitliyoruz ki Koşma (Run) tetiklenmesin!
-            animator.SetFloat(speedParam, 0.5f, 0.1f, Time.deltaTime);
-        }
-        else
-        {
-            animator.SetFloat(speedParam, 0f, 0.1f, Time.deltaTime);
-        }
+        // 1. Berechne die aktuelle reale Geschwindigkeit des Agenten
+        float currentVelocity = agent.velocity.magnitude;
+
+        // 2. Übergib den echten Wert weich an den Animator.
+        // Das '0.1f' sorgt für ein sanftes Überblenden (Damp Time), damit er nicht ruckelt.
+        animator.SetFloat(speedParam, currentVelocity, 0.1f, Time.deltaTime);
     }
 
     void GoToRandomWaypoint()
