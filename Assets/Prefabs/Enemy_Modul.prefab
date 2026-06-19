@@ -107,6 +107,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e872afd81308120a69a597022570fab9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1197952259840502680}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: e872afd81308120a69a597022570fab9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 501403629700593782}
   m_SourcePrefab: {fileID: 100100000, guid: e872afd81308120a69a597022570fab9, type: 3}
 --- !u!4 &1555288426413444601 stripped
 Transform:
@@ -138,3 +141,19 @@ MonoBehaviour:
   - {fileID: 0}
   walkSpeed: 1.5
   runSpeed: 4.5
+--- !u!114 &501403629700593782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2224406829982947139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a529570c9b4a1064594da6e2746a926b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBase
+  maxHealth: 50
+  knockbackForce: 5
+  damageColor: {r: 1, g: 0, b: 0, a: 1}
+  flashDuration: 0.1
