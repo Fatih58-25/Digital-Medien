@@ -16,7 +16,7 @@ public class PlayerAnimator : MonoBehaviour
     
     private void Start()
     {
-        animator = GetComponent<Animator>();
+        animator = GetComponentInChildren<Animator>();
     }
     
     public void SetMovementSpeed(float speed)
