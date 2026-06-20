@@ -1,201 +1,106 @@
 using UnityEngine;
 
+[RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
-    [Header("Bewegung")]
-    [SerializeField] private float normalSpeed = 5f;
-    [SerializeField] private float sprintSpeed = 8f;
-    [SerializeField] private float duckSpeed = 2.5f;
-    [SerializeField] private float groundDrag = 5f;
+    [Header("Movement Settings")]
+    public float moveSpeed = 5f;
+    public float rotationSpeed = 10f;
+    public float gravity = 9.81f;
 
-    [Header("Springen")]
-    [SerializeField] private float jumpForce = 5f;
-    [SerializeField] private float jumpCooldown = 0.25f;
-    [SerializeField] private float airDrag = 2f;
+    [Header("Animation Reference")]
+    private PlayerAnimator playerAnimator; // Senin animatör scriptini referans alıyoruz
 
-    [Header("Boden")]
-    [SerializeField] private float groundDistance = 0.4f;
-    [SerializeField] private LayerMask groundLayer;
-
-    [Header("Ducken")]
-    [SerializeField] private float duckHeight = 0.5f;
-    [SerializeField] private float normalHeight = 1.8f;
-    [SerializeField] private float duckSmooth = 5f;
-
-    // Komponenten
-    private Rigidbody rb;
-    private CapsuleCollider capsuleCollider;
-    private PlayerAnimator playerAnimator;
+    private CharacterController controller;
+    private Transform cameraTransform;
     private Vector3 moveDirection;
-    private Vector3 capsuleCenter;
+    private float verticalVelocity;
 
-    // Zustände
-    private bool isGrounded;
-    private bool isSprinting;
-    private bool isDucking;
-    private bool canJump = true;
+    // Diğer scriptlerin (Combat) aradığı IsDucking değişkeni
+    public bool IsDucking { get; private set; } = false;
 
-    private float currentSpeed;
-
-    private void Start()
+    void Start()
     {
-        rb = GetComponent<Rigidbody>();
-        capsuleCollider = GetComponent<CapsuleCollider>();
-        playerAnimator = GetComponent<PlayerAnimator>();
-        capsuleCenter = capsuleCollider.center;
+        controller = GetComponent<CharacterController>();
+        playerAnimator = GetComponent<PlayerAnimator>(); // Aynı objede olduklarını varsayıyoruz
 
-        // Rigidbody Setup
-        rb.freezeRotation = true;
+        // Eğer sahne açıldığında otomatik bulamadıysa alt objelere de baksın
+        if (playerAnimator == null)
+        {
+            playerAnimator = GetComponentInChildren<PlayerAnimator>();
+        }
+
+        if (Camera.main != null)
+        {
+            cameraTransform = Camera.main.transform;
+        }
     }
 
-    private void Update()
-    {
-        // Boden Check
-        isGrounded = Physics.Raycast(transform.position + Vector3.up * 0.1f, Vector3.down, groundDistance, groundLayer);
-
-        // Input
-        HandleMovementInput();
-        HandleSprintInput();
-        HandleDuckInput();
-        HandleJumpInput();
-
-        // Ducken Animation
-        HandleDuckAnimation();
-
-        // Geschwindigkeit
-        AdjustSpeed();
-
-        // Animation
-        UpdateAnimations();
-    }
-
-    private void FixedUpdate()
+    void Update()
     {
         MovePlayer();
-        ApplyDrag();
     }
 
-    private void HandleMovementInput()
+    void MovePlayer()
     {
-        float horizontal = Input.GetAxis("Horizontal");
-        float vertical = Input.GetAxis("Vertical");
+        // Girdileri al (W, A, S, D)
+        float horizontal = Input.GetAxisRaw("Horizontal");
+        float vertical = Input.GetAxisRaw("Vertical");
+        Vector3 inputDir = new Vector3(horizontal, 0f, vertical).normalized;
 
-        // Bewegungsrichtung relativ zur Kameraausrichtung
-        Vector3 forward = Camera.main.transform.forward;
-        Vector3 right = Camera.main.transform.right;
+        float currentSpeed = 0f;
 
-        // Flatten Y axis für korrekte Bodenbewegung
-        forward.y = 0f;
-        right.y = 0f;
-        forward.Normalize();
-        right.Normalize();
-
-        moveDirection = forward * vertical + right * horizontal;
-
-        // Character Rotation zum Blick der Kamera
-        if (moveDirection.magnitude > 0.1f)
+        // Karakter hareket ediyorsa
+        if (inputDir.magnitude >= 0.1f)
         {
+            // Kameranın açısına göre hareket yönünü hesapla
+            Vector3 camForward = cameraTransform.forward;
+            camForward.y = 0;
+            camForward.Normalize();
+
+            Vector3 camRight = cameraTransform.right;
+            camRight.y = 0;
+            camRight.Normalize();
+
+            // Gerçek hareket yönü
+            moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
+
+            // Karakteri hareket yönüne doğru yumuşakça döndür
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
-        }
-    }
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
-    private void HandleSprintInput()
-    {
-        isSprinting = Input.GetKey(KeyCode.LeftShift) && !isDucking && isGrounded;
-    }
-
-    private void HandleDuckInput()
-    {
-        isDucking = Input.GetKey(KeyCode.LeftControl);
-    }
-
-    private void HandleJumpInput()
-    {
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && canJump && !isDucking)
-        {
-            Jump();
-        }
-    }
-
-    private void Jump()
-    {
-        // Y Velocity zurücksetzen
-        Vector3 velocity = rb.linearVelocity;
-        velocity.y = 0f;
-        rb.linearVelocity = velocity;
-
-        // Jump Force anwenden
-        rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
-
-        canJump = false;
-        playerAnimator.SetJump(true);
-
-        Invoke(nameof(ResetJumpCooldown), jumpCooldown);
-    }
-
-    private void ResetJumpCooldown()
-    {
-        canJump = true;
-    }
-
-    private void AdjustSpeed()
-    {
-        if (isDucking)
-        {
-            currentSpeed = duckSpeed;
-        }
-        else if (isSprinting)
-        {
-            currentSpeed = sprintSpeed;
+            // Animatöre göndermek için hız değerini alıyoruz (0 ile moveSpeed arasında bir değer)
+            currentSpeed = inputDir.magnitude * moveSpeed;
         }
         else
         {
-            currentSpeed = normalSpeed;
+            moveDirection = Vector3.zero;
+            currentSpeed = 0f; // Hareket yoksa hız sıfır
         }
+
+        // Yerçekimi hesaplaması
+        if (controller.isGrounded)
+        {
+            verticalVelocity = -0.5f; 
+        }
+        else
+        {
+            verticalVelocity -= gravity * Time.deltaTime;
+        }
+
+        // ANIMATÖRÜ GÜNCELLEME KISMI (Burada senin scripti çağırıyoruz)
+        if (playerAnimator != null)
+        {
+            // 1. Karakterin hızını animatöre gönderiyoruz (Animator içindeki "Speed" parametresini tetikler)
+            playerAnimator.SetMovementSpeed(currentSpeed);
+
+            // 2. Karakter yerde mi havada mı bilgisini gönderiyoruz ("IsGrounded" parametresi)
+            playerAnimator.SetIsGrounded(controller.isGrounded);
+        }
+
+        moveDirection.y = verticalVelocity;
+
+        // Karakteri hareket ettir
+        controller.Move(moveDirection * moveSpeed * Time.deltaTime);
     }
-
-    private void MovePlayer()
-    {
-        // Bewegung nur auf horizontale Achse anwenden
-        Vector3 velocity = rb.linearVelocity;
-        velocity.x = moveDirection.x * currentSpeed;
-        velocity.z = moveDirection.z * currentSpeed;
-        rb.linearVelocity = velocity;
-    }
-
-    private void ApplyDrag()
-    {
-        rb.linearDamping = isGrounded ? groundDrag : airDrag;
-    }
-
-    private void HandleDuckAnimation()
-    {
-        float targetHeight = isDucking ? duckHeight : normalHeight;
-
-        // Capsule Height anpassen
-        float newHeight = Mathf.Lerp(capsuleCollider.height, targetHeight, Time.deltaTime * duckSmooth);
-        capsuleCollider.height = newHeight;
-
-        // Capsule Center für korrektes Ducken anpassen
-        Vector3 newCenter = capsuleCenter;
-        newCenter.y = (newHeight / 2f);
-        capsuleCollider.center = newCenter;
-    }
-
-    private void UpdateAnimations()
-    {
-        float speed = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
-
-        playerAnimator.SetMovementSpeed(speed);
-        playerAnimator.SetIsSprinting(isSprinting);
-        playerAnimator.SetIsDucking(isDucking);
-        playerAnimator.SetIsGrounded(isGrounded);
-    }
-
-    // Getter für andere Systeme
-    public bool IsGrounded => isGrounded;
-    public bool IsSprinting => isSprinting;
-    public bool IsDucking => isDucking;
-    public Vector3 GetMoveDirection => moveDirection;
 }

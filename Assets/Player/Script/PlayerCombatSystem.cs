@@ -42,6 +42,7 @@ public class PlayerCombatSystem : MonoBehaviour
     
     private void HandleAttackInput()
     {
+        // NOT: PlayerController içine IsDucking eklediğimiz için artık burası hata vermeyecek!
         if (Input.GetMouseButtonDown(0) && !isParrying && !playerController.IsDucking)
         {
             // Angriff-Cooldown checken
@@ -54,6 +55,7 @@ public class PlayerCombatSystem : MonoBehaviour
     
     private void HandleParryInput()
     {
+        // NOT: PlayerController içine IsDucking eklediğimiz için artık burası hata vermeyecek!
         if (Input.GetMouseButtonDown(1) && !playerController.IsDucking)
         {
             // Parry-Cooldown checken
@@ -67,17 +69,17 @@ public class PlayerCombatSystem : MonoBehaviour
     private void PerformAttack()
     {
         lastAttackTime = Time.time;
-        lastAttackInputTime = Time.time;
         
-        // Combo-System: Nach jedem Attack den Combo-Index erhöhen
+        // Kombo sıfırlama kontrolü (Önceki kodda zamanı erken güncellediği için düzeltildi)
         if (Time.time - lastAttackInputTime > comboResetTime)
         {
             currentAttackCombo = 0;
         }
         
+        lastAttackInputTime = Time.time; // Giriş zamanını şimdi güncelliyoruz
         currentAttackCombo = (currentAttackCombo % 3) + 1; // 3 verschiedene Attacken
         
-        playerAnimator.PlayAttack(currentAttackCombo);
+        if (playerAnimator != null) playerAnimator.PlayAttack(currentAttackCombo);
         
         Debug.Log($"Angriff #{currentAttackCombo} ausgeführt!");
     }
@@ -88,7 +90,7 @@ public class PlayerCombatSystem : MonoBehaviour
         isParrying = true;
         parryEndTime = Time.time + parryDuration;
         
-        playerAnimator.PlayParry();
+        if (playerAnimator != null) playerAnimator.PlayParry();
         
         Debug.Log("Parieren!");
     }

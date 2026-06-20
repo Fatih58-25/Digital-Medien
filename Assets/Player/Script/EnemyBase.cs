@@ -12,7 +12,9 @@ public class EnemyBase : MonoBehaviour, IDamageable
     
     private int currentHealth;
     private Rigidbody rb;
-    private Renderer renderer;
+    
+    [Header("Setup")]
+    public Renderer myRenderer; // Değişken adını myRenderer yaptık
     private Color originalColor;
     private bool isDead = false;
     
@@ -20,11 +22,17 @@ public class EnemyBase : MonoBehaviour, IDamageable
     {
         currentHealth = maxHealth;
         rb = GetComponent<Rigidbody>();
-        renderer = GetComponentInChildren<Renderer>();
         
-        if (renderer != null)
+        // Eğer Inspector'dan bir Renderer sürüklemediysen, otomatik olarak çocuk objelerden bulsun
+        if (myRenderer == null)
         {
-            originalColor = renderer.material.color;
+            myRenderer = GetComponentInChildren<Renderer>();
+        }
+        
+        // Orijinal rengi hafızaya alıyoruz (Sürekli GetComponent yapmaktan kurtulduk)
+        if (myRenderer != null)
+        {
+            originalColor = myRenderer.material.color;
         }
     }
     
@@ -40,6 +48,8 @@ public class EnemyBase : MonoBehaviour, IDamageable
         if (rb != null)
         {
             Vector3 direction = (transform.position - GetPlayerPosition()).normalized;
+            // Y ekseninde saçma sapan uçmaması için knockback yönünü düzleştiriyoruz
+            direction.y = 0; 
             rb.AddForce(direction * knockbackForce, ForceMode.Impulse);
         }
         
@@ -69,17 +79,18 @@ public class EnemyBase : MonoBehaviour, IDamageable
     
     private System.Collections.IEnumerator FlashDamage()
     {
-        if (renderer == null) yield break;
+        // Sürekli GetComponent çağırmak yerine startta bulduğumuz myRenderer'ı kullanıyoruz
+        if (myRenderer == null) yield break;
         
-        renderer.material.color = damageColor;
+        myRenderer.material.color = damageColor;
         yield return new WaitForSeconds(flashDuration);
-        renderer.material.color = originalColor;
+        myRenderer.material.color = originalColor;
     }
     
     private Vector3 GetPlayerPosition()
     {
-        // Spieler im Scene suchen
-        PlayerController player = FindObjectOfType<PlayerController>();
+        // FindObjectOfType yerine yeni ve performanslı olan FindFirstObjectByType kullandık
+        PlayerController player = Object.FindFirstObjectByType<PlayerController>();
         return player != null ? player.transform.position : transform.position;
     }
     
