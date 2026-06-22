@@ -1,27 +1,36 @@
 using UnityEngine;
 
-public class MinimalCameraInput : MonoBehaviour
+public class SoulsCamera : MonoBehaviour
 {
     [Header("References")]
-    public Transform target; // Takip edilecek karakter (Player)
+    public Transform target; // Karakter (Player)
 
     [Header("Distance Settings")]
     public float distance = 4.0f; // Karakter ile kamera arasındaki sabit mesafe
     public float height = 2.0f;   // Kameranın karakterden yüksekliği
 
     [Header("Rotation Settings")]
-    public float xSpeed = 120.0f; // Mouse sağ-sol hızı
-    public float ySpeed = 120.0f; // Mouse yukarı-aşağı hızı
-    public float yMinLimit = -10f; // Aşağı bakma sınırı
-    public float yMaxLimit = 60f;  // Yukarı bakma sınırı
+    public float xSpeed = 120.0f; 
+    public float ySpeed = 120.0f; 
+    public float yMinLimit = -10f; 
+    public float yMaxLimit = 60f;  
+
+    [Header("Deadzone (Ölü Bölge) Settings")]
+    [Tooltip("Karakter bu yarıçap içinde hareket ederken kamera onu takip etmek için pozisyonunu değiştirmez.")]
+    public float deadzoneRadius = 1.5f; 
+    [Tooltip("Karakter ölü bölgeden çıktığında kameranın odak noktasının karaktere yetişme hızı.")]
+    public float cameraFollowSmooth = 5.0f;
 
     [Header("Souls-like Auto Follow")]
-    public float autoFollowSpeed = 2.0f; // Karakter arkasına geçme hızı
-    public float idleAutoFollowDelay = 1.0f; // Fare bırakıldıktan kaç saniye sonra otomatik dönsün?
+    public float autoFollowSpeed = 2.0f; 
+    public float idleAutoFollowDelay = 1.0f; 
 
     private float x = 0.0f;
     private float y = 0.0f;
     private float lastMouseInputTime;
+    
+    // Kameranın asıl takip ettiği hayali merkez noktası (Ölü bölge için)
+    private Vector3 cameraTargetCenter; 
 
     void Start()
     {
@@ -29,22 +38,41 @@ public class MinimalCameraInput : MonoBehaviour
         x = angles.y;
         y = angles.x;
 
-        // İmleci oyun ekranına gizle ve kilitle (Esc ile kurtulabilirsin)
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        if (target)
+        {
+            // Başlangıçta odak noktasını karakterin olduğu yere eşitle
+            cameraTargetCenter = target.position;
+        }
     }
 
     void LateUpdate()
     {
         if (!target) return;
 
-        // Mouse girdilerini al
+        // 1. ÖLÜ BÖLGE (DEADZONE) HESAPLAMASI
+        // Karakter ile kameranın şu an odaklandığı merkez arasındaki mesafeyi buluyoruz
+        Vector3 distanceToTarget = target.position - cameraTargetCenter;
+        
+        // Eğer karakter ölü bölge sınırını aşarsa, merkez noktasını karaktere doğru kaydırıyoruz
+        if (distanceToTarget.magnitude > deadzoneRadius)
+        {
+            Vector3 targetCenterPos = target.position - (distanceToTarget.normalized * deadzoneRadius);
+            // Yavaşça yumuşatılmış geçiş (Lerp) ile kamera merkezini kaydır
+            cameraTargetCenter = Vector3.Lerp(cameraTargetCenter, targetCenterPos, cameraFollowSmooth * Time.deltaTime);
+        }
+
+        // 2. MOUSE GİRDİLERİ
         float mouseX = Input.GetAxis("Mouse X");
         float mouseY = Input.GetAxis("Mouse Y");
 
+        float inputX = Input.GetAxisRaw("Horizontal");
+        float inputY = Input.GetAxisRaw("Vertical");
+
         if (mouseX != 0 || mouseY != 0)
         {
-            // Oyuncu mouse'u hareket ettiriyorsa manuel kontrolü al
             x += mouseX * xSpeed * 0.02f;
             y -= mouseY * ySpeed * 0.02f;
             y = ClampAngle(y, yMinLimit, yMaxLimit);
@@ -53,36 +81,43 @@ public class MinimalCameraInput : MonoBehaviour
         }
         else
         {
-            // Oyuncu fareyi bıraktıysa ve karakter hareket ediyorsa (W-A-S-D)
-            float playerSpeed = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).magnitude;
+            // Oyuncu hareket ediyorsa (W-A-S-D) ve fareyi bıraktıysa
+            float playerSpeed = new Vector3(inputX, 0, inputY).magnitude;
             
-            if (playerSpeed > 0.1f && Time.time - lastMouseInputTime > idleAutoFollowDelay)
+            // KRİTİK DEĞİŞİKLİK: inputY >= 0 koşulu eklendi. (S tuşuna basılıyorsa inputY negatif olur, yani < 0)
+            // Böylece sadece ileri veya yanlara giderken otomatik arkaya geçecek, S ile geri giderken geçmeyecek.
+            if (playerSpeed > 0.1f && inputY >= 0f && Time.time - lastMouseInputTime > idleAutoFollowDelay)
             {
-                // Kameranın yatay açısını (X), karakterin mevcut arkasına doğru yavaşça eşitle
                 float targetRotationY = target.eulerAngles.y;
                 x = Mathf.LerpAngle(x, targetRotationY, autoFollowSpeed * Time.deltaTime);
             }
         }
 
-        // Hesaplanan açılara göre rotasyonu oluştur
+        // 3. POZİSYON VE ROTASYON UYGULAMA
         Quaternion rotation = Quaternion.Euler(y, x, 0);
 
-        // Kameranın pozisyonunu ayarla (Karakterin arkasında ve yukarısında olacak şekilde)
+        // Artik "target.position" yerine ölü bölge ile hesaplanmış "cameraTargetCenter"ı baz alıyoruz
         Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
-        Vector3 position = rotation * negDistance + (target.position + Vector3.up * height);
+        Vector3 position = rotation * negDistance + (cameraTargetCenter + Vector3.up * height);
 
-        // Pozisyon ve rotasyonu kameraya uygula
         transform.rotation = rotation;
         transform.position = position;
     }
 
-    // Açıları sınırlamak için yardımcı fonksiyon
     private float ClampAngle(float angle, float min, float max)
     {
         if (angle < -360F) angle += 360F;
         if (angle > 360F) angle -= 360F;
         return Mathf.Clamp(angle, min, max);
     }
-    // PlayerController.cs içindeki "gravity" değişkeninin hemen altına ekleyebilirsin:
-public bool IsDucking { get; private set; } // Diğer scriptlerin okuyabilmesi için
+
+    // Editörde ölü bölge alanını görebilmek için gizmo çizdirelim
+    private void OnDrawGizmosSelected()
+    {
+        if (target)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(cameraTargetCenter, deadzoneRadius);
+        }
+    }
 }

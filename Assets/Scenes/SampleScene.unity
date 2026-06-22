@@ -477,12 +477,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MinimalCameraInput
   target: {fileID: 1369592782}
-  distance: 4
-  height: 2
+  distance: 2.5
+  height: 1.4
   xSpeed: 80
   ySpeed: 80
   yMinLimit: -10
   yMaxLimit: 60
+  deadzoneRadius: 0.00001
+  cameraFollowSmooth: 5
   autoFollowSpeed: 0.5
   idleAutoFollowDelay: 1
 --- !u!1 &410087039
@@ -2811,6 +2813,8 @@ MonoBehaviour:
   ySpeed: 120
   yMinLimit: -10
   yMaxLimit: 60
+  deadzoneRadius: 1.5
+  cameraFollowSmooth: 5
   autoFollowSpeed: 2
   idleAutoFollowDelay: 1
 --- !u!114 &2067635785
@@ -2947,16 +2951,28 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1555288426413444601, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.2095
+      objectReference: {fileID: 0}
+    - target: {fileID: 1555288426413444601, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.2095
+      objectReference: {fileID: 0}
+    - target: {fileID: 1555288426413444601, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.2095
+      objectReference: {fileID: 0}
+    - target: {fileID: 1555288426413444601, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 167.02734
+      value: 167
       objectReference: {fileID: 0}
     - target: {fileID: 1555288426413444601, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 62.96
+      value: 63.1
       objectReference: {fileID: 0}
     - target: {fileID: 1555288426413444601, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 116.2092
+      value: 116.22
       objectReference: {fileID: 0}
     - target: {fileID: 1555288426413444601, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: m_LocalRotation.w
@@ -3000,32 +3016,44 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 128328625682971874, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: gravity
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 128328625682971874, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: moveSpeed
+      value: 3.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 128328625682971874, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: rotationSpeed
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 128328625682971874, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: virtualCamera
       value: 
       objectReference: {fileID: 2067635781}
     - target: {fileID: 1220344621724814553, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.0889223
+      value: 0.96459997
       objectReference: {fileID: 0}
     - target: {fileID: 1220344621724814553, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.0889223
+      value: 0.96459997
       objectReference: {fileID: 0}
     - target: {fileID: 1220344621724814553, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.0889223
+      value: 0.96459997
       objectReference: {fileID: 0}
     - target: {fileID: 1220344621724814553, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2.8193
+      value: -2.8115
       objectReference: {fileID: 0}
     - target: {fileID: 1220344621724814553, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.2255
+      value: 1.3017
       objectReference: {fileID: 0}
     - target: {fileID: 1220344621724814553, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -7.9683
+      value: -7.9496
       objectReference: {fileID: 0}
     - target: {fileID: 1700073480730833711, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: m_TagString
