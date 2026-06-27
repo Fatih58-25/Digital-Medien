@@ -5816,7 +5816,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -775, y: -135}
+  m_AnchoredPosition: {x: -756, y: 41}
   m_SizeDelta: {x: 620, y: 110}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5939276537690869726
@@ -5869,7 +5869,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ac1ac63c3ca14506b42107ba7fd370e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MenuSelector
-  selectionBackground: {fileID: 0}
+  selectionBackground: {fileID: 7696778812879444633}
   menuItems:
   - {fileID: 6425930420849834739}
   - {fileID: 1776475794452877798}
