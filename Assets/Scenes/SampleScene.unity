@@ -908,6 +908,76 @@ Transform:
   m_Children: []
   m_Father: {fileID: 877025173}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &573805793
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 573805795}
+  - component: {fileID: 573805794}
+  - component: {fileID: 573805796}
+  m_Layer: 0
+  m_Name: Dialog
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &573805794
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 573805793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 149237616, guid: df2ec02f61e861546b9427c26ccacb8d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ArticyRuntime.dll::Articy.Unity.ArticyFlowPlayer
+  useDefaultGlobalVariables: 1
+  globalVariables: {fileID: 0}
+  overwriteMethodProvider: 0
+  overwrittenMethodProvider: {fileID: 0}
+  startOn:
+    instanceId: 0
+    referencingMode: 0
+    lowId: 286
+    highId: 16777216
+  pauseOn: 7
+  ignoreInvalidBranches: 1
+  continuouslyRecalculateBranches: 0
+  continouslyRecalculateInterval: 1
+--- !u!4 &573805795
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 573805793}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.05579, y: 67.16434, z: 483.72418}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &573805796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 573805793}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b578fe66e0d6d534eb5fdac1ec2cf3db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Dialog_Player
 --- !u!1 &580646105
 GameObject:
   m_ObjectHideFlags: 0
@@ -1986,9 +2056,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3744698708348978812, guid: f51f3441e33fc43b9bc97d244f2addf8, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8711514825150980723, guid: f51f3441e33fc43b9bc97d244f2addf8, type: 3}
       propertyPath: m_Name
       value: Vida_Modul
+      objectReference: {fileID: 0}
+    - target: {fileID: 8711514825150980723, guid: f51f3441e33fc43b9bc97d244f2addf8, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3428,6 +3506,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: World_Modul
       objectReference: {fileID: 0}
+    - target: {fileID: 5531531150285016894, guid: 45c40bd6b62ffc4408e9eddcaf07f2c6, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 8947803029429894183, guid: 45c40bd6b62ffc4408e9eddcaf07f2c6, type: 3}
       propertyPath: m_LocalPosition.y
       value: -4.921
@@ -3742,3 +3824,4 @@ SceneRoots:
   - {fileID: 433990393}
   - {fileID: 7442711869409674804}
   - {fileID: 1555598860}
+  - {fileID: 573805795}
