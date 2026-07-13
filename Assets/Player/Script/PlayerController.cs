@@ -7,27 +7,31 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed = 5f;
     public float rotationSpeed = 10f;
     public float gravity = 9.81f;
+    public float jumpHeight = 2.0f; // Exakte Sprunghöhe in Metern
 
     [Header("Animation Reference")]
-    private PlayerAnimator playerAnimator; // Senin animatör scriptini referans alıyoruz
+    [SerializeField] private PlayerAnimator playerAnimator; // Jetzt im Inspector sichtbar!
 
     private CharacterController controller;
     private Transform cameraTransform;
     private Vector3 moveDirection;
     private float verticalVelocity;
 
-    // Diğer scriptlerin (Combat) aradığı IsDucking değişkeni
+    // Wird vom Combat-System abgefragt
     public bool IsDucking { get; private set; } = false;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        playerAnimator = GetComponent<PlayerAnimator>(); // Aynı objede olduklarını varsayıyoruz
 
-        // Eğer sahne açıldığında otomatik bulamadıysa alt objelere de baksın
+        // Falls im Inspector nicht zugewiesen, automatisch suchen
         if (playerAnimator == null)
         {
-            playerAnimator = GetComponentInChildren<PlayerAnimator>();
+            playerAnimator = GetComponent<PlayerAnimator>();
+            if (playerAnimator == null)
+            {
+                playerAnimator = GetComponentInChildren<PlayerAnimator>();
+            }
         }
 
         if (Camera.main != null)
@@ -43,17 +47,18 @@ public class PlayerController : MonoBehaviour
 
     void MovePlayer()
     {
-        // Girdileri al (W, A, S, D)
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 inputDir = new Vector3(horizontal, 0f, vertical).normalized;
 
         float currentSpeed = 0f;
+        float actualMoveSpeed = moveSpeed; // Basis-Geschwindigkeit (5)
 
-        // Karakter hareket ediyorsa
+        // SPRINT-CHECK: Wenn Shift gedrückt wird UND wir uns bewegen
+        bool isSprinting = Input.GetKey(KeyCode.LeftShift) && inputDir.magnitude >= 0.1f;
+
         if (inputDir.magnitude >= 0.1f)
         {
-            // Kameranın açısına göre hareket yönünü hesapla
             Vector3 camForward = cameraTransform.forward;
             camForward.y = 0;
             camForward.Normalize();
@@ -62,45 +67,55 @@ public class PlayerController : MonoBehaviour
             camRight.y = 0;
             camRight.Normalize();
 
-            // Gerçek hareket yönü
             moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
 
-            // Karakteri hareket yönüne doğru yumuşakça döndür
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
-            // Animatöre göndermek için hız değerini alıyoruz (0 ile moveSpeed arasında bir değer)
-            currentSpeed = inputDir.magnitude * moveSpeed;
+            // Wenn wir sprinten, erhöhen wir das Tempo im Spiel und setzen den Animations-Wert auf 2
+            if (isSprinting)
+            {
+                actualMoveSpeed = moveSpeed * 1.3f; // Macht den Charakter 60% schneller beim Rennen
+                currentSpeed = 2f; // 2 bedeutet "Rennen" im Animator
+            }
+            else
+            {
+                currentSpeed = 1f; // 1 bedeutet "Gehen/Laufen"
+            }
         }
         else
         {
             moveDirection = Vector3.zero;
-            currentSpeed = 0f; // Hareket yoksa hız sıfır
+            currentSpeed = 0f; // 0 bedeutet "Stillstand"
         }
 
-        // Yerçekimi hesaplaması
+        // ========================================================
+        // ZIPLAMA & SMART GRAVITY (Dein perfekt eingestellter Sprung)
+        // ========================================================
         if (controller.isGrounded)
         {
-            verticalVelocity = -0.5f; 
+            verticalVelocity = -2f;
+            if (Input.GetButtonDown("Jump"))
+            {
+                verticalVelocity = Mathf.Sqrt(jumpHeight * 5f * gravity);
+            }
         }
         else
         {
-            verticalVelocity -= gravity * Time.deltaTime;
+            if (verticalVelocity <= 0) verticalVelocity -= gravity * 8f * Time.deltaTime;
+            else verticalVelocity -= gravity * 5f * Time.deltaTime;
         }
 
-        // ANIMATÖRÜ GÜNCELLEME KISMI (Burada senin scripti çağırıyoruz)
+        // Werte an den Animator übergeben
         if (playerAnimator != null)
         {
-            // 1. Karakterin hızını animatöre gönderiyoruz (Animator içindeki "Speed" parametresini tetikler)
             playerAnimator.SetMovementSpeed(currentSpeed);
-
-            // 2. Karakter yerde mi havada mı bilgisini gönderiyoruz ("IsGrounded" parametresi)
             playerAnimator.SetIsGrounded(controller.isGrounded);
         }
 
-        moveDirection.y = verticalVelocity;
+        Vector3 finalMove = moveDirection * actualMoveSpeed;
+        finalMove.y = verticalVelocity;
 
-        // Karakteri hareket ettir
-        controller.Move(moveDirection * moveSpeed * Time.deltaTime);
+        controller.Move(finalMove * Time.deltaTime);
     }
 }

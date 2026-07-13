@@ -326,6 +326,8 @@ MonoBehaviour:
   moveSpeed: 5
   rotationSpeed: 10
   gravity: 9.81
+  jumpHeight: 2
+  playerAnimator: {fileID: 3390624492628410397}
 --- !u!114 &7604660470900541941
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -360,6 +362,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9e9531dd156a5645999a1b2a0d6e462, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimator
+  animator: {fileID: 5961641252036405865}
 --- !u!143 &3723810347478332216
 CharacterController:
   m_ObjectHideFlags: 0
@@ -376,7 +379,7 @@ CharacterController:
     m_Bits: 0
   m_LayerOverridePriority: 0
   m_ProvidesContacts: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
   m_Height: 2
   m_Radius: 0.5
