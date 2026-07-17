@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 53ebba6d489f1c64aa5aec476bdaa1ce
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 289023
+  packageName: Generic Behavior Tree
+  packageVersion: 1.0
+  assetPath: Assets/Generic Behavior Trees/Materials/Green.mat
+  uploadId: 674129

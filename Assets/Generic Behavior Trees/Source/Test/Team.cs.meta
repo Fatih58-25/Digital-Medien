@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 6e5429812feb69f4ba41b4f975e261fe
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 289023
+  packageName: Generic Behavior Tree
+  packageVersion: 1.0
+  assetPath: Assets/Generic Behavior Trees/Source/Test/Team.cs
+  uploadId: 674129

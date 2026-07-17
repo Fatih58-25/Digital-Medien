@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: a61ad8f12c38c4546b278ab124390f3f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 289023
+  packageName: Generic Behavior Tree
+  packageVersion: 1.0
+  assetPath: Assets/Generic Behavior Trees/Source/Core/Selector.cs
+  uploadId: 674129

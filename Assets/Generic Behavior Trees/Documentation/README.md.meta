@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 6e6a90f4ce65a3145904dd2a80004762
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 289023
+  packageName: Generic Behavior Tree
+  packageVersion: 1.0
+  assetPath: Assets/Generic Behavior Trees/Documentation/README.md
+  uploadId: 674129

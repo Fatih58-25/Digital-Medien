@@ -1725,9 +1725,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   swordPosition: {fileID: 0}
-  parryCooldown: 0.5
-  parryDuration: 0.3
   parryReduction: 0.7
+  rollCooldown: 1
+  rollDuration: 0.6
+  iframeDuration: 0.35
+  rollKey: 120
 --- !u!114 &1369592777
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1869,6 +1871,47 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &1400054924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1400054916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5275230f574c0bd4484e0838fa20466f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  agent: {fileID: 1400054919}
+  animator: {fileID: 1400054928}
+  player: {fileID: 1369592782}
+  waypoints:
+  - {fileID: 1938783030}
+  - {fileID: 539648558}
+  - {fileID: 651586453}
+  - {fileID: 2001380554}
+  - {fileID: 422140919}
+  currentWaypointIndex: 0
+  walkSpeed: 1.5
+  runSpeed: 4
+--- !u!95 &1400054928 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 4860881815815821187, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
+  m_PrefabInstance: {fileID: 734440787753713840}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1400054929
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1400054916}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: add8467ac3142d7b4b9fd11676ee6a44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SkeletonAI
 --- !u!1 &1402638158 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7514375129242107238, guid: 45c40bd6b62ffc4408e9eddcaf07f2c6, type: 3}
@@ -2011,6 +2054,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1236623684684237983, guid: f51f3441e33fc43b9bc97d244f2addf8, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1904025804312238744, guid: f51f3441e33fc43b9bc97d244f2addf8, type: 3}
       propertyPath: m_LocalScale.x
       value: 1.0940118
@@ -3077,21 +3124,22 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4860881815815821187, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: m_WarningMessage
-      value: "\nBinding warning: Some generic clip(s) animate transforms that are
-        already bound by a Humanoid avatar. These transforms can only be changed
-        by Humanoid clips.\n\tTransform 'mixamorig:Hips'\n\tTransform 'mixamorig:LeftFoot'\n\tTransform
-        'mixamorig:Spine1'\n\tTransform 'mixamorig:LeftToeBase'\n\tTransform 'mixamorig:RightArm'\n\tTransform
-        'mixamorig:LeftLeg'\n\tTransform 'mixamorig:LeftShoulder'\n\tTransform 'mixamorig:RightFoot'\n\tTransform
-        'mixamorig:Head'\n\tTransform 'mixamorig:LeftUpLeg'\n\tand more ...\n\tFrom
-        animation clip 'Sword And Shield Slash'"
+      value: 
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1197952259840502680, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2224406829982947139, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1400054919}
+    - targetCorrespondingSourceObject: {fileID: 2224406829982947139, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1400054924}
+    - targetCorrespondingSourceObject: {fileID: 2224406829982947139, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1400054929}
   m_SourcePrefab: {fileID: 100100000, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
 --- !u!1001 &1720276887832188377
 PrefabInstance:

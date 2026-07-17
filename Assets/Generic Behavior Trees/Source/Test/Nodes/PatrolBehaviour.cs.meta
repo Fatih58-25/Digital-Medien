@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 2274a357b2e7ed0439ab306b9e6ece8e
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 289023
+  packageName: Generic Behavior Tree
+  packageVersion: 1.0
+  assetPath: Assets/Generic Behavior Trees/Source/Test/Nodes/PatrolBehaviour.cs
+  uploadId: 674129

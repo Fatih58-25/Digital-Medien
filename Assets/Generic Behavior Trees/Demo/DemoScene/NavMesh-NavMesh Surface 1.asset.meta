@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: aa0d5968eb5eb1d4294a207e3b8d1fa7
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 23800000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 289023
+  packageName: Generic Behavior Tree
+  packageVersion: 1.0
+  assetPath: Assets/Generic Behavior Trees/Demo/DemoScene/NavMesh-NavMesh Surface
+    1.asset
+  uploadId: 674129

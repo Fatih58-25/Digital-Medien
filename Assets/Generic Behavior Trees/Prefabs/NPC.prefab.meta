@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 4e19136a43b9efe4f9e160a429287e2d
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 289023
+  packageName: Generic Behavior Tree
+  packageVersion: 1.0
+  assetPath: Assets/Generic Behavior Trees/Prefabs/NPC.prefab
+  uploadId: 674129
