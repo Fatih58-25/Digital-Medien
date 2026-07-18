@@ -487,6 +487,9 @@ MonoBehaviour:
   cameraFollowSmooth: 5
   autoFollowSpeed: 0.5
   idleAutoFollowDelay: 1
+  enemyTag: Enemy
+  maxLockOnDistance: 15
+  lockOnKey: 113
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1725,6 +1728,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   swordPosition: {fileID: 0}
+  comboResetDelay: 1.2
   parryReduction: 0.7
   rollCooldown: 1
   rollDuration: 0.6
@@ -1895,6 +1899,28 @@ MonoBehaviour:
   currentWaypointIndex: 0
   walkSpeed: 1.5
   runSpeed: 4
+  idleTimer: 0
+  lastPlayerPosDist: 0
+  decisionTimer: 0
+  strafeDirection: 1
+  nextAttackTime: 0
+  attackCooldown: 6
+  currentMode: Idle
+  modeTimer: 0
+  playerIdleTimer: 0
+  comboCount: 0
+  maxComboLimit: 3
+  globalCooldownTimer: 0
+  isDodging: 0
+  dodgeTimer: 0
+  hasTarget: 0
+  minComboCount: 1
+  maxComboCount: 2
+  minComboCooldown: 4
+  maxComboCooldown: 6
+  earlyAttackChance: 0.05
+  patienceDuration: 5
+  isPlayerAttacking: 0
 --- !u!95 &1400054928 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 4860881815815821187, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
@@ -2953,6 +2979,9 @@ MonoBehaviour:
   cameraFollowSmooth: 5
   autoFollowSpeed: 2
   idleAutoFollowDelay: 1
+  enemyTag: Enemy
+  maxLockOnDistance: 15
+  lockOnKey: 113
 --- !u!114 &2067635785
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3121,6 +3150,10 @@ PrefabInstance:
     - target: {fileID: 1555288426413444601, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
       value: 78.486
+      objectReference: {fileID: 0}
+    - target: {fileID: 2224406829982947139, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
+      propertyPath: m_TagString
+      value: Enemy
       objectReference: {fileID: 0}
     - target: {fileID: 4860881815815821187, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: m_WarningMessage
@@ -3320,6 +3353,14 @@ PrefabInstance:
     - target: {fileID: 5467543285393722708, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: m_LocalRotation.z
       value: -0.03742214
+      objectReference: {fileID: 0}
+    - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: rollCooldown
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+      propertyPath: rollDuration
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7706051369840560864, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: m_Constraints

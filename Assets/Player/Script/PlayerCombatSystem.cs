@@ -3,11 +3,16 @@ using UnityEngine;
 public class PlayerCombatSystem : MonoBehaviour
 {
     [Header("Angriff")]
-    [SerializeField] private float attackCooldown = 0.5f;
+    [SerializeField] private float attackCooldown = 0.4f; // Combo arası geçiş süresi için biraz düşürüldü
     [SerializeField] private float attackRange = 1.5f;
     [SerializeField] private int attackDamage = 10;
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private Transform swordPosition;
+
+    [Header("Souls Kombo Ayarları")]
+    [SerializeField] private float comboResetDelay = 1.2f; // Tıklama bırakılırsa kombo kaç sn sonra sıfırlansın?
+    private int currentAttackCombo = 0; // Şu anki kombo indeksi (0, 1, 2)
+    private int maxComboCount = 3;       // 3 farklı animasyonumuz var
 
     [Header("Souls-like Blocken")]
     [SerializeField] private float parryReduction = 0.7f; // 70% Schadensreduktion beim Blocken
@@ -29,8 +34,6 @@ public class PlayerCombatSystem : MonoBehaviour
     private bool isInvincible = false;
     private float iframeEndTime;
 
-    private int currentAttackCombo = 0;
-
     private void Start()
     {
         playerAnimator = GetComponent<PlayerAnimator>();
@@ -41,14 +44,14 @@ public class PlayerCombatSystem : MonoBehaviour
     {
         HandleRollInput();
         HandleAttackInput();
-        HandleBlockInput(); // Unser neues 3-Phasen-Blocken
+        HandleBlockInput(); 
 
         UpdateRollState();
+        UpdateComboState(); // Kombo zaman aşımı kontrolü
     }
 
     private void HandleAttackInput()
     {
-        // Angreifen blockiert, wenn man rollt, duckt oder GERADE BLOCKT
         if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !playerController.IsDucking)
         {
             if (Time.time - lastAttackTime >= attackCooldown)
@@ -58,16 +61,53 @@ public class PlayerCombatSystem : MonoBehaviour
         }
     }
 
+    private void UpdateComboState()
+    {
+        // Eğer oyuncu vurmayı bıraktıysa ve belirlenen süre geçtiyse komboyu sıfırla
+        if (Time.time - lastAttackTime > comboResetDelay && currentAttackCombo > 0)
+        {
+            ResetCombo();
+        }
+    }
+
+    private void PerformAttack()
+    {
+        lastAttackTime = Time.time;
+
+        // Rastgelelik (Random.Range) tamamen kaldırıldı! 
+        // Animasyonlar 1, 2, 3 şeklinde gittiği için comboIndex'e 1 ekleyip gönderiyoruz.
+        int animationIndex = currentAttackCombo + 1;
+
+        if (playerAnimator != null)
+        {
+            playerAnimator.PlayAttack(animationIndex);
+        }
+        Debug.Log($"Souls-like Angriff #{animationIndex} ausgeführt!");
+
+        // Komboyu bir sonraki adıma geçir
+        currentAttackCombo++;
+
+        // Eğer kombo serisi bittiyse (3 vuruş yapıldıysa) sıfırla
+        if (currentAttackCombo >= maxComboCount)
+        {
+            currentAttackCombo = 0;
+        }
+    }
+
+    private void ResetCombo()
+    {
+        currentAttackCombo = 0;
+        Debug.Log("Combo zurückgesetzt.");
+    }
+
     private void HandleBlockInput()
     {
-        // Wenn man rollt oder duckt, kann man nicht blocken
         if (isRolling || playerController.IsDucking)
         {
             if (isBlocking) StopBlocking();
             return;
         }
 
-        // Rechtsklick gedrückt HALTEN -> Blocken starten/halten
         if (Input.GetMouseButton(1))
         {
             if (!isBlocking)
@@ -75,7 +115,6 @@ public class PlayerCombatSystem : MonoBehaviour
                 StartBlocking();
             }
         }
-        // Rechtsklick LOSLASSEN -> Blocken beenden
         else if (isBlocking)
         {
             StopBlocking();
@@ -104,27 +143,15 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void HandleRollInput()
     {
-        // Rollen beendet das Blocken sofort (Cancel-Mechanik wie in Souls)
         if (Input.GetKeyDown(rollKey) && !isRolling && !playerController.IsDucking)
         {
             if (Time.time - lastRollTime >= rollCooldown)
             {
-                if (isBlocking) isBlocking = false; // Block-Zustand im Code lösen
+                if (isBlocking) isBlocking = false; 
+                ResetCombo(); // Yuvarlanınca kombo zinciri de kırılır (Tam Souls tarzı)
                 PerformRoll();
             }
         }
-    }
-
-    private void PerformAttack()
-    {
-        lastAttackTime = Time.time;
-        currentAttackCombo = Random.Range(1, 4);
-
-        if (playerAnimator != null)
-        {
-            playerAnimator.PlayAttack(currentAttackCombo);
-        }
-        Debug.Log($"Zufälliger Angriff #{currentAttackCombo} ausgeführt!");
     }
 
     private void PerformRoll()
@@ -138,7 +165,7 @@ public class PlayerCombatSystem : MonoBehaviour
 
         if (playerAnimator != null)
         {
-            playerAnimator.GetComponent<Animator>().SetBool("IsBlocking", false); // Zur Sicherheit
+            playerAnimator.GetComponent<Animator>().SetBool("IsBlocking", false); 
             playerAnimator.GetComponent<Animator>().SetTrigger("Roll");
         }
         Debug.Log("Souls-like Rolle ausgeführt!");
@@ -167,26 +194,35 @@ public class PlayerCombatSystem : MonoBehaviour
             if (damageable != null)
             {
                 int finalDamage = attackDamage;
-                switch (currentAttackCombo)
+
+                // Burada hasarı o anki kombo sırasına göre hesaplıyoruz.
+                // Not: PerformAttack içinde currentAttackCombo arttığı için buradaki kontrolleri bir önceki adıma göre yapıyoruz.
+                int hitIndex = currentAttackCombo == 0 ? 3 : currentAttackCombo;
+
+                switch (hitIndex)
                 {
-                    case 1: finalDamage = attackDamage; break;
-                    case 2: finalDamage = Mathf.RoundToInt(attackDamage * 1.2f); break;
-                    case 3: finalDamage = Mathf.RoundToInt(attackDamage * 1.5f); break;
+                    case 1: 
+                        finalDamage = attackDamage; 
+                        break;
+                    case 2: 
+                        finalDamage = Mathf.RoundToInt(attackDamage * 1.2f); 
+                        break;
+                    case 3: 
+                        finalDamage = Mathf.RoundToInt(attackDamage * 1.5f); 
+                        break;
                 }
                 damageable.TakeDamage(finalDamage);
+                Debug.Log($"Gegner mit Combo-Schritt {hitIndex} getroffen! Schaden: {finalDamage}");
             }
         }
     }
 
-    // Für das Schadenssystem: Wenn der Spieler getroffen wird und IsBlocking wahr ist, reduziere den Schaden!
     public bool IsParrying => isBlocking;
     public float GetParryReduction => isBlocking ? parryReduction : 1f;
-
     public bool IsRolling => isRolling;
     public bool IsInvincible => isInvincible;
 }
 
-// HIER IST DAS INTERFACE WIEDER DA:
 public interface IDamageable
 {
     void TakeDamage(int damage);
