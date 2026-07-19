@@ -11,8 +11,14 @@ public class EnemyBase : MonoBehaviour, IDamageable
     [SerializeField] private float flashDuration = 0.1f;
 
     [Header("Death Settings")]
-    [SerializeField] private string deathTriggerName = "Die"; // Name des Triggers im Animator
+    [SerializeField] private string deathTriggerName = "Die"; // Name des Triggers im Animator des NPCs
     [SerializeField] private float timeBeforeDestroy = 3.0f;  // Wie lange er tot am Boden liegt
+
+    [Header("Angriff (NPC gegen Spieler)")]
+    [SerializeField] private Transform attackPoint;           // Ein leeres GameObject in der Hand des NPCs
+    [SerializeField] private float attackRange = 1.5f;        // Angriffsreichweite des NPCs
+    [SerializeField] private int attackDamage = 15;           // Schaden, den der NPC dem Spieler zufügt
+    [SerializeField] private LayerMask playerLayer;           // Der Layer deines Spielers (z.B. "Player")
 
     [Header("Setup")]
     [SerializeField] private Renderer myRenderer;
@@ -20,7 +26,7 @@ public class EnemyBase : MonoBehaviour, IDamageable
     private int currentHealth;
     private Color originalColor;
     private Rigidbody rb;
-    private Animator animator; // Referenz zum Animator
+    private Animator animator;
     private bool isDead = false;
     private Coroutine flashRoutine;
 
@@ -41,6 +47,7 @@ public class EnemyBase : MonoBehaviour, IDamageable
         }
     }
 
+    // --- SCHADEN EMPFANGEN (Vom Spieler getroffen werden) ---
     public void TakeDamage(int damage)
     {
         if (isDead) return;
@@ -87,18 +94,18 @@ public class EnemyBase : MonoBehaviour, IDamageable
             animator.SetTrigger(deathTriggerName);
         }
 
-        // 2. Collider ausschalten (damit der Spieler nicht gegen die Leiche läuft)
+        // 2. Collider ausschalten (damit der Spieler nicht an der Leiche hängenbleibt)
         Collider enemyCollider = GetComponent<Collider>();
         if (enemyCollider != null)
         {
             enemyCollider.enabled = false;
         }
 
-        // 3. Rigidbody stoppen (damit er nicht wegrutscht oder durch den Boden fällt)
+        // 3. Rigidbody stoppen und Physik deaktivieren
         if (rb != null)
         {
-            rb.linearVelocity = Vector3.zero; // Stoppt alle Bewegungen
-            rb.isKinematic = true;            // Schaltet die Physik für ihn ab
+            rb.linearVelocity = Vector3.zero;
+            rb.isKinematic = true;
         }
 
         // 4. Objekt nach der eingestellten Zeit zerstören
@@ -114,6 +121,38 @@ public class EnemyBase : MonoBehaviour, IDamageable
         myRenderer.material.color = originalColor;
     }
 
+
+    // --- SCHADEN AUSTEILEN (Den Spieler angreifen) ---
+    // DIESE FUNKTION PER ANIMATION EVENT IN DER NPC-ANGRIFFSANIMATION AUFRUFEN
+    public void OnEnemyAttackHit()
+    {
+        if (isDead || attackPoint == null) return;
+
+        // Erstellt eine Kugel an der Angriffs-Position des NPCs und checkt, ob der Spieler getroffen wurde
+        Collider[] hits = Physics.OverlapSphere(attackPoint.position, attackRange, playerLayer);
+
+        foreach (Collider hit in hits)
+        {
+            // Sucht nach der Schadens-Komponente auf dem Spieler
+            IDamageable damageable = hit.GetComponentInParent<IDamageable>();
+            if (damageable != null)
+            {
+                damageable.TakeDamage(attackDamage);
+            }
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        // Zeichnet eine rote Kugel im Editor für die Angriffsreichweite des NPCs
+        if (attackPoint != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(attackPoint.position, attackRange);
+        }
+    }
+
+    // Properties für eventuelle UI-Anzeigen (z.B. Lebensbalken)
     public int GetCurrentHealth => currentHealth;
     public int GetMaxHealth => maxHealth;
     public float GetHealthPercentage => (float)currentHealth / maxHealth;

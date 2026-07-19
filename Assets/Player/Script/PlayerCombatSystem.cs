@@ -230,7 +230,12 @@ public class PlayerCombatSystem : MonoBehaviour
             }
         }
     }
-
+    // Diese Methode tut beim Spieler absolut nichts, 
+    // verhindert aber die Fehlermeldung, falls er dieselbe Animation nutzt!
+    public void OnEnemyAttackHit()
+    {
+        // Leer lassen!
+    }
     private void OnDrawGizmosSelected()
     {
         // Zeichnet eine rote Kugel im Editor, damit du die Reichweite (Attack Range) visuell anpassen kannst
