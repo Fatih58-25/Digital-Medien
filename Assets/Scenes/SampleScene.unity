@@ -3211,6 +3211,10 @@ PrefabInstance:
       value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 501403629700593782, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
+      propertyPath: knockbackForce
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 501403629700593782, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: playerLayer.m_Bits
       value: 256
       objectReference: {fileID: 0}
@@ -4089,7 +4093,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: attackDamage
-      value: 25
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: rollCooldown

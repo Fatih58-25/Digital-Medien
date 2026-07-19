@@ -71,16 +71,58 @@ public class EnemyBase : MonoBehaviour, IDamageable
     {
         if (isDead) return;
 
-        direction.y = 0f;
+        direction.y = 0f; // Verhindert, dass der Gegner in die Luft fliegt
 
+        // 1. Prüfen, ob eine KI aktiv ist und diese kurz stoppen
+        UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null && agent.enabled)
+        {
+            // Stoppt die KI-Bewegung und schaltet den Agenten kurz ab
+            agent.velocity = Vector3.zero;
+            agent.enabled = false;
+
+            // Startet eine verzögerte Funktion, die den Agenten nach 0.2 Sekunden wieder anschaltet
+            StartCoroutine(ReenableNavMesh(agent, 0.2f));
+        }
+
+        // 2. Den physikalischen Impuls flüssig ausführen
         if (rb != null)
         {
+            rb.linearVelocity = Vector3.zero; // Nulle alte Kräfte für einen sauberen Impuls
             rb.AddForce(direction.normalized * knockbackForce, ForceMode.Impulse);
         }
         else
         {
-            transform.position += direction.normalized * knockbackForce * 0.1f;
+            // Falls kein Rigidbody da ist, nutzen wir eine sanfte Bewegung per Coroutine statt Teleportation
+            StartCoroutine(SmoothMoveFallback(direction.normalized * knockbackForce * 0.2f));
         }
+    }
+
+    // Hilfsfunktion: Schaltet die KI nach dem Rückstoß automatisch wieder ein
+    private System.Collections.IEnumerator ReenableNavMesh(UnityEngine.AI.NavMeshAgent agent, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (agent != null && !isDead)
+        {
+            agent.enabled = true;
+        }
+    }
+
+    // Hilfsfunktion: Schiebt den Gegner sanft zurück, falls absolut kein Rigidbody genutzt werden kann
+    private System.Collections.IEnumerator SmoothMoveFallback(Vector3 offset)
+    {
+        float duration = 0.15f;
+        float elapsed = 0f;
+        Vector3 startPos = transform.position;
+        Vector3 targetPos = startPos + offset;
+
+        while (elapsed < duration)
+        {
+            transform.position = Vector3.Lerp(startPos, targetPos, elapsed / duration);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        transform.position = targetPos;
     }
 
     private void Die()
