@@ -3,19 +3,18 @@ using UnityEngine;
 public class PlayerCombatSystem : MonoBehaviour
 {
     [Header("Angriff")]
-    [SerializeField] private float attackCooldown = 0.4f; // Combo arası geçiş süresi için biraz düşürüldü
+    [SerializeField] private float attackCooldown = 0.4f;
     [SerializeField] private float attackRange = 1.5f;
     [SerializeField] private int attackDamage = 10;
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private Transform swordPosition;
 
     [Header("Souls Kombo Ayarları")]
-    [SerializeField] private float comboResetDelay = 1.2f; // Tıklama bırakılırsa kombo kaç sn sonra sıfırlansın?
-    private int currentAttackCombo = 0; // Şu anki kombo indeksi (0, 1, 2)
-    private int maxComboCount = 3;       // 3 farklı animasyonumuz var
+    [SerializeField] private float comboResetDelay = 1.2f;
+    [SerializeField] private int maxComboCount = 3;
 
     [Header("Souls-like Blocken")]
-    [SerializeField] private float parryReduction = 0.7f; // 70% Schadensreduktion beim Blocken
+    [SerializeField] private float parryReduction = 0.7f;
     private bool isBlocking = false;
 
     [Header("Souls-like Rollen & iFrames")]
@@ -34,6 +33,9 @@ public class PlayerCombatSystem : MonoBehaviour
     private bool isInvincible = false;
     private float iframeEndTime;
 
+    private int currentAttackCombo = 0;
+    private int queuedComboIndex = 1;
+
     private void Start()
     {
         playerAnimator = GetComponent<PlayerAnimator>();
@@ -44,10 +46,9 @@ public class PlayerCombatSystem : MonoBehaviour
     {
         HandleRollInput();
         HandleAttackInput();
-        HandleBlockInput(); 
-
+        HandleBlockInput();
         UpdateRollState();
-        UpdateComboState(); // Kombo zaman aşımı kontrolü
+        UpdateComboState();
     }
 
     private void HandleAttackInput()
@@ -59,45 +60,6 @@ public class PlayerCombatSystem : MonoBehaviour
                 PerformAttack();
             }
         }
-    }
-
-    private void UpdateComboState()
-    {
-        // Eğer oyuncu vurmayı bıraktıysa ve belirlenen süre geçtiyse komboyu sıfırla
-        if (Time.time - lastAttackTime > comboResetDelay && currentAttackCombo > 0)
-        {
-            ResetCombo();
-        }
-    }
-
-    private void PerformAttack()
-    {
-        lastAttackTime = Time.time;
-
-        // Rastgelelik (Random.Range) tamamen kaldırıldı! 
-        // Animasyonlar 1, 2, 3 şeklinde gittiği için comboIndex'e 1 ekleyip gönderiyoruz.
-        int animationIndex = currentAttackCombo + 1;
-
-        if (playerAnimator != null)
-        {
-            playerAnimator.PlayAttack(animationIndex);
-        }
-        Debug.Log($"Souls-like Angriff #{animationIndex} ausgeführt!");
-
-        // Komboyu bir sonraki adıma geçir
-        currentAttackCombo++;
-
-        // Eğer kombo serisi bittiyse (3 vuruş yapıldıysa) sıfırla
-        if (currentAttackCombo >= maxComboCount)
-        {
-            currentAttackCombo = 0;
-        }
-    }
-
-    private void ResetCombo()
-    {
-        currentAttackCombo = 0;
-        Debug.Log("Combo zurückgesetzt.");
     }
 
     private void HandleBlockInput()
@@ -121,6 +83,62 @@ public class PlayerCombatSystem : MonoBehaviour
         }
     }
 
+    private void HandleRollInput()
+    {
+        if (Input.GetKeyDown(rollKey) && !isRolling && !playerController.IsDucking)
+        {
+            if (Time.time - lastRollTime >= rollCooldown)
+            {
+                if (isBlocking) StopBlocking();
+                ResetCombo();
+                PerformRoll();
+            }
+        }
+    }
+
+    private void PerformAttack()
+    {
+        lastAttackTime = Time.time;
+        queuedComboIndex = currentAttackCombo + 1;
+
+        if (queuedComboIndex > maxComboCount)
+        {
+            queuedComboIndex = 1;
+            currentAttackCombo = 0;
+        }
+
+        if (playerAnimator != null)
+        {
+            playerAnimator.PlayAttack(queuedComboIndex);
+        }
+
+        Debug.Log($"Souls-like Angriff #{queuedComboIndex} ausgeführt!");
+
+        currentAttackCombo++;
+        if (currentAttackCombo >= maxComboCount)
+        {
+            currentAttackCombo = 0;
+        }
+    }
+
+    private void PerformRoll()
+    {
+        lastRollTime = Time.time;
+        isRolling = true;
+        isInvincible = true;
+
+        rollEndTime = Time.time + rollDuration;
+        iframeEndTime = Time.time + iframeDuration;
+
+        if (playerAnimator != null)
+        {
+            playerAnimator.GetComponent<Animator>().SetBool("IsBlocking", false);
+            playerAnimator.GetComponent<Animator>().SetTrigger("Roll");
+        }
+
+        Debug.Log("Souls-like Rolle ausgeführt!");
+    }
+
     private void StartBlocking()
     {
         isBlocking = true;
@@ -141,79 +159,85 @@ public class PlayerCombatSystem : MonoBehaviour
         Debug.Log("Schild runter! Blocken beendet.");
     }
 
-    private void HandleRollInput()
-    {
-        if (Input.GetKeyDown(rollKey) && !isRolling && !playerController.IsDucking)
-        {
-            if (Time.time - lastRollTime >= rollCooldown)
-            {
-                if (isBlocking) isBlocking = false; 
-                ResetCombo(); // Yuvarlanınca kombo zinciri de kırılır (Tam Souls tarzı)
-                PerformRoll();
-            }
-        }
-    }
-
-    private void PerformRoll()
-    {
-        lastRollTime = Time.time;
-        isRolling = true;
-        isInvincible = true;
-
-        rollEndTime = Time.time + rollDuration;
-        iframeEndTime = Time.time + iframeDuration;
-
-        if (playerAnimator != null)
-        {
-            playerAnimator.GetComponent<Animator>().SetBool("IsBlocking", false); 
-            playerAnimator.GetComponent<Animator>().SetTrigger("Roll");
-        }
-        Debug.Log("Souls-like Rolle ausgeführt!");
-    }
-
     private void UpdateRollState()
     {
         if (isInvincible && Time.time >= iframeEndTime)
         {
             isInvincible = false;
         }
+
         if (isRolling && Time.time >= rollEndTime)
         {
             isRolling = false;
         }
     }
 
+    private void UpdateComboState()
+    {
+        if (Time.time - lastAttackTime > comboResetDelay && currentAttackCombo > 0)
+        {
+            ResetCombo();
+        }
+    }
+
+    private void ResetCombo()
+    {
+        currentAttackCombo = 0;
+        queuedComboIndex = 1;
+        Debug.Log("Combo zurückgesetzt.");
+    }
+
+    // DIESE METHODE WIRD EXAKT EINMAL VOM ANIMATION EVENT AUFGERUFEN
     public void OnAttackHit()
     {
         if (swordPosition == null) return;
+
+        // Erstellt eine Kugel an der Schwertposition und checkt, wer im EnemyLayer getroffen wurde
         Collider[] hits = Physics.OverlapSphere(swordPosition.position, attackRange, enemyLayer);
 
         foreach (Collider hit in hits)
         {
-            IDamageable damageable = hit.GetComponent<IDamageable>();
+            IDamageable damageable = hit.GetComponentInParent<IDamageable>();
+            EnemyBase enemy = hit.GetComponentInParent<EnemyBase>();
+
             if (damageable != null)
             {
                 int finalDamage = attackDamage;
 
-                // Burada hasarı o anki kombo sırasına göre hesaplıyoruz.
-                // Not: PerformAttack içinde currentAttackCombo arttığı için buradaki kontrolleri bir önceki adıma göre yapıyoruz.
-                int hitIndex = currentAttackCombo == 0 ? 3 : currentAttackCombo;
-
-                switch (hitIndex)
+                // Multipliziert den Schaden basierend auf dem aktuellen Combo-Schritt
+                switch (queuedComboIndex)
                 {
-                    case 1: 
-                        finalDamage = attackDamage; 
+                    case 1:
+                        finalDamage = attackDamage;
                         break;
-                    case 2: 
-                        finalDamage = Mathf.RoundToInt(attackDamage * 1.2f); 
+                    case 2:
+                        finalDamage = Mathf.RoundToInt(attackDamage * 1.2f);
                         break;
-                    case 3: 
-                        finalDamage = Mathf.RoundToInt(attackDamage * 1.5f); 
+                    case 3:
+                        finalDamage = Mathf.RoundToInt(attackDamage * 1.5f);
                         break;
                 }
+
                 damageable.TakeDamage(finalDamage);
-                Debug.Log($"Gegner mit Combo-Schritt {hitIndex} getroffen! Schaden: {finalDamage}");
+
+                if (enemy != null)
+                {
+                    Vector3 dir = enemy.transform.position - transform.position;
+                    enemy.ApplyKnockback(dir);
+                }
+
+                Debug.Log($"Gegner mit Combo-Schritt {queuedComboIndex} getroffen! Schaden: {finalDamage}");
             }
+        }
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        // Zeichnet eine rote Kugel im Editor, damit du die Reichweite (Attack Range) visuell anpassen kannst
+        if (swordPosition != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(swordPosition.position, attackRange);
         }
     }
 
@@ -221,9 +245,4 @@ public class PlayerCombatSystem : MonoBehaviour
     public float GetParryReduction => isBlocking ? parryReduction : 1f;
     public bool IsRolling => isRolling;
     public bool IsInvincible => isInvincible;
-}
-
-public interface IDamageable
-{
-    void TakeDamage(int damage);
 }
