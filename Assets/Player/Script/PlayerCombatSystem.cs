@@ -3,14 +3,18 @@ using UnityEngine;
 public class PlayerCombatSystem : MonoBehaviour
 {
     [Header("Angriff")]
-    [SerializeField] private float attackCooldown = 0.5f;
+    [SerializeField] private float attackCooldown = 0.4f;
     [SerializeField] private float attackRange = 1.5f;
     [SerializeField] private int attackDamage = 10;
     [SerializeField] private LayerMask enemyLayer;
     [SerializeField] private Transform swordPosition;
 
+    [Header("Souls Kombo Ayarları")]
+    [SerializeField] private float comboResetDelay = 1.2f;
+    [SerializeField] private int maxComboCount = 3;
+
     [Header("Souls-like Blocken")]
-    [SerializeField] private float parryReduction = 0.7f; // 70% Schadensreduktion beim Blocken
+    [SerializeField] private float parryReduction = 0.7f;
     private bool isBlocking = false;
 
     [Header("Souls-like Rollen & iFrames")]
@@ -30,6 +34,7 @@ public class PlayerCombatSystem : MonoBehaviour
     private float iframeEndTime;
 
     private int currentAttackCombo = 0;
+    private int queuedComboIndex = 1;
 
     private void Start()
     {
@@ -41,14 +46,13 @@ public class PlayerCombatSystem : MonoBehaviour
     {
         HandleRollInput();
         HandleAttackInput();
-        HandleBlockInput(); // Unser neues 3-Phasen-Blocken
-
+        HandleBlockInput();
         UpdateRollState();
+        UpdateComboState();
     }
 
     private void HandleAttackInput()
     {
-        // Angreifen blockiert, wenn man rollt, duckt oder GERADE BLOCKT
         if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !playerController.IsDucking)
         {
             if (Time.time - lastAttackTime >= attackCooldown)
@@ -60,14 +64,12 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void HandleBlockInput()
     {
-        // Wenn man rollt oder duckt, kann man nicht blocken
         if (isRolling || playerController.IsDucking)
         {
             if (isBlocking) StopBlocking();
             return;
         }
 
-        // Rechtsklick gedrückt HALTEN -> Blocken starten/halten
         if (Input.GetMouseButton(1))
         {
             if (!isBlocking)
@@ -75,11 +77,66 @@ public class PlayerCombatSystem : MonoBehaviour
                 StartBlocking();
             }
         }
-        // Rechtsklick LOSLASSEN -> Blocken beenden
         else if (isBlocking)
         {
             StopBlocking();
         }
+    }
+
+    private void HandleRollInput()
+    {
+        if (Input.GetKeyDown(rollKey) && !isRolling && !playerController.IsDucking)
+        {
+            if (Time.time - lastRollTime >= rollCooldown)
+            {
+                if (isBlocking) StopBlocking();
+                ResetCombo();
+                PerformRoll();
+            }
+        }
+    }
+
+    private void PerformAttack()
+    {
+        lastAttackTime = Time.time;
+        queuedComboIndex = currentAttackCombo + 1;
+
+        if (queuedComboIndex > maxComboCount)
+        {
+            queuedComboIndex = 1;
+            currentAttackCombo = 0;
+        }
+
+        if (playerAnimator != null)
+        {
+            playerAnimator.PlayAttack(queuedComboIndex);
+        }
+
+        Debug.Log($"Souls-like Angriff #{queuedComboIndex} ausgeführt!");
+
+        currentAttackCombo++;
+        if (currentAttackCombo >= maxComboCount)
+        {
+            currentAttackCombo = 0;
+        }
+    }
+
+    private void PerformRoll()
+    {
+        lastRollTime = Time.time;
+        isRolling = true;
+        isInvincible = true;
+
+        rollEndTime = Time.time + rollDuration;
+        iframeEndTime = Time.time + iframeDuration;
+
+        if (playerAnimator != null)
+        {
+            playerAnimator.GetComponent<Animator>().SetBool("IsBlocking", false);
+            playerAnimator.GetComponent<Animator>().SetTrigger("Roll");
+        }
+
+        Debug.Log("Souls-like Rolle ausgeführt!");
     }
 
     private void StartBlocking()
@@ -102,92 +159,95 @@ public class PlayerCombatSystem : MonoBehaviour
         Debug.Log("Schild runter! Blocken beendet.");
     }
 
-    private void HandleRollInput()
-    {
-        // Rollen beendet das Blocken sofort (Cancel-Mechanik wie in Souls)
-        if (Input.GetKeyDown(rollKey) && !isRolling && !playerController.IsDucking)
-        {
-            if (Time.time - lastRollTime >= rollCooldown)
-            {
-                if (isBlocking) isBlocking = false; // Block-Zustand im Code lösen
-                PerformRoll();
-            }
-        }
-    }
-
-    private void PerformAttack()
-    {
-        lastAttackTime = Time.time;
-        currentAttackCombo = Random.Range(1, 4);
-
-        if (playerAnimator != null)
-        {
-            playerAnimator.PlayAttack(currentAttackCombo);
-        }
-        Debug.Log($"Zufälliger Angriff #{currentAttackCombo} ausgeführt!");
-    }
-
-    private void PerformRoll()
-    {
-        lastRollTime = Time.time;
-        isRolling = true;
-        isInvincible = true;
-
-        rollEndTime = Time.time + rollDuration;
-        iframeEndTime = Time.time + iframeDuration;
-
-        if (playerAnimator != null)
-        {
-            playerAnimator.GetComponent<Animator>().SetBool("IsBlocking", false); // Zur Sicherheit
-            playerAnimator.GetComponent<Animator>().SetTrigger("Roll");
-        }
-        Debug.Log("Souls-like Rolle ausgeführt!");
-    }
-
     private void UpdateRollState()
     {
         if (isInvincible && Time.time >= iframeEndTime)
         {
             isInvincible = false;
         }
+
         if (isRolling && Time.time >= rollEndTime)
         {
             isRolling = false;
         }
     }
 
+    private void UpdateComboState()
+    {
+        if (Time.time - lastAttackTime > comboResetDelay && currentAttackCombo > 0)
+        {
+            ResetCombo();
+        }
+    }
+
+    private void ResetCombo()
+    {
+        currentAttackCombo = 0;
+        queuedComboIndex = 1;
+        Debug.Log("Combo zurückgesetzt.");
+    }
+
+    // DIESE METHODE WIRD EXAKT EINMAL VOM ANIMATION EVENT AUFGERUFEN
     public void OnAttackHit()
     {
         if (swordPosition == null) return;
+
+        // Erstellt eine Kugel an der Schwertposition und checkt, wer im EnemyLayer getroffen wurde
         Collider[] hits = Physics.OverlapSphere(swordPosition.position, attackRange, enemyLayer);
 
         foreach (Collider hit in hits)
         {
-            IDamageable damageable = hit.GetComponent<IDamageable>();
+            IDamageable damageable = hit.GetComponentInParent<IDamageable>();
+            EnemyBase enemy = hit.GetComponentInParent<EnemyBase>();
+
             if (damageable != null)
             {
                 int finalDamage = attackDamage;
-                switch (currentAttackCombo)
+
+                // Multipliziert den Schaden basierend auf dem aktuellen Combo-Schritt
+                switch (queuedComboIndex)
                 {
-                    case 1: finalDamage = attackDamage; break;
-                    case 2: finalDamage = Mathf.RoundToInt(attackDamage * 1.2f); break;
-                    case 3: finalDamage = Mathf.RoundToInt(attackDamage * 1.5f); break;
+                    case 1:
+                        finalDamage = attackDamage;
+                        break;
+                    case 2:
+                        finalDamage = Mathf.RoundToInt(attackDamage * 1.2f);
+                        break;
+                    case 3:
+                        finalDamage = Mathf.RoundToInt(attackDamage * 1.5f);
+                        break;
                 }
+
                 damageable.TakeDamage(finalDamage);
+
+                if (enemy != null)
+                {
+                    Vector3 dir = enemy.transform.position - transform.position;
+                    enemy.ApplyKnockback(dir);
+                }
+
+                Debug.Log($"Gegner mit Combo-Schritt {queuedComboIndex} getroffen! Schaden: {finalDamage}");
             }
         }
     }
+    // Diese Methode tut beim Spieler absolut nichts, 
+    // verhindert aber die Fehlermeldung, falls er dieselbe Animation nutzt!
+    public void OnEnemyAttackHit()
+    {
+        // Leer lassen!
+    }
+    private void OnDrawGizmosSelected()
+    {
+        // Zeichnet eine rote Kugel im Editor, damit du die Reichweite (Attack Range) visuell anpassen kannst
+        if (swordPosition != null)
+        {
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(swordPosition.position, attackRange);
+        }
+    }
 
-    // Für das Schadenssystem: Wenn der Spieler getroffen wird und IsBlocking wahr ist, reduziere den Schaden!
     public bool IsParrying => isBlocking;
     public float GetParryReduction => isBlocking ? parryReduction : 1f;
-
     public bool IsRolling => isRolling;
     public bool IsInvincible => isInvincible;
-}
-
-// HIER IST DAS INTERFACE WIEDER DA:
-public interface IDamageable
-{
-    void TakeDamage(int damage);
 }
