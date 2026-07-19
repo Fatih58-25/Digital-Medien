@@ -1897,7 +1897,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff89b3429339d244cb5d608cbcab9d7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  maxHealth: 10
+  maxHealth: 100
 --- !u!1 &1383669656 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5628551796134667182, guid: 45c40bd6b62ffc4408e9eddcaf07f2c6, type: 3}
@@ -3208,7 +3208,7 @@ PrefabInstance:
       objectReference: {fileID: 1691526606}
     - target: {fileID: 501403629700593782, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: attackDamage
-      value: 50
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 501403629700593782, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: playerLayer.m_Bits

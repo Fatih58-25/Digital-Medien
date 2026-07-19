@@ -152,6 +152,11 @@ public class EnemyBase : MonoBehaviour, IDamageable
         }
     }
 
+    // Sicherheitsnetz: Tut beim NPC nichts, verhindert aber Fehlermeldungen!
+    public void OnAttackHit()
+    {
+        // Bleibt leer
+    }
     // Properties für eventuelle UI-Anzeigen (z.B. Lebensbalken)
     public int GetCurrentHealth => currentHealth;
     public int GetMaxHealth => maxHealth;
