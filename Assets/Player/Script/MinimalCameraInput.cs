@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.UI; // UI elementlerini kontrol etmek için eklendi
+using UnityEngine.UI;
 
 public class SoulsCamera : MonoBehaviour
 {
@@ -28,8 +28,8 @@ public class SoulsCamera : MonoBehaviour
     public string enemyTag = "Enemy";     
     public float maxLockOnDistance = 15f; 
     public KeyCode lockOnKey = KeyCode.Q; 
-    public RectTransform lockOnUI;        // Buraya oluşturduğun UI Image'ı sürükleyeceksin
-    public float lockOnHeightOffset = 1.2f; // Noktanın düşmanın neresinde duracağı (1.2f göğüs hizasıdır)
+    public RectTransform lockOnUI;        
+    public float lockOnHeightOffset = 1.2f; 
 
     private float x = 0.0f;
     private float y = 0.0f;
@@ -53,7 +53,6 @@ public class SoulsCamera : MonoBehaviour
             cameraTargetCenter = target.position;
         }
 
-        // Başlangıçta UI açıksa kapatalım
         if (lockOnUI != null) lockOnUI.gameObject.SetActive(false);
     }
 
@@ -89,9 +88,8 @@ public class SoulsCamera : MonoBehaviour
         // 2. ROTASYON HESAPLAMALARI
         if (isLockedOn && lockedTarget != null)
         {
-            // --- KİLİTLENME AKTİFKEN ROTASYON ---
             Vector3 dirToEnemy = lockedTarget.position - cameraTargetCenter;
-            dirToEnemy.y = 0; // Dikey bükülmeyi önleme hilesi
+            dirToEnemy.y = 0; 
 
             if (dirToEnemy != Vector3.zero)
             {
@@ -103,42 +101,28 @@ public class SoulsCamera : MonoBehaviour
 
             lastMouseInputTime = Time.time;
 
-            // --- UI NOKTASINI DÜŞMANIN ÜZERİNE YAPIŞTIRMA MOTORU ---
-           // --- UI NOKTASINI DÜŞMANIN ÜZERİNE YAPIŞTIRMA & TİTREMESİZ ÖLÇEKLENDİRME ---
-if (lockOnUI != null)
-{
-    // 1. TİTREMESİZ POZİSYONLAMA (SmoothDamp Motoru)
-    Vector3 worldTargetPos = lockedTarget.position + Vector3.up * lockOnHeightOffset;
-    Vector3 screenPos = Camera.main.WorldToScreenPoint(worldTargetPos);
+            // --- UI TAKİP VE TİTREMESİZ ÖLÇEKLENDİRME ---
+            if (lockOnUI != null)
+            {
+                Vector3 worldTargetPos = lockedTarget.position + Vector3.up * lockOnHeightOffset;
+                Vector3 screenPos = Camera.main.WorldToScreenPoint(worldTargetPos);
 
-    // Titremeyi engellemek için anlık pozisyonu yumuşatarak geçiriyoruz
-    // (Bunun için sınıfın en üstüne değişken eklemek yerine geçici bir velocity kullanıyoruz)
-    Vector3 currentVelocity = Vector3.zero;
-    // 0.03f degeri takibin ne kadar yumuşak olacağını belirler (Sıfıra yaklaştıkça sertleşir, büyüdükçe yağ gibi akar)
-    lockOnUI.position = Vector3.SmoothDamp(lockOnUI.position, screenPos, ref currentVelocity, 0.02f);
+                Vector3 currentVelocity = Vector3.zero;
+                lockOnUI.position = Vector3.SmoothDamp(lockOnUI.position, screenPos, ref currentVelocity, 0.02f);
 
+                float currentDist = Vector3.Distance(target.position, lockedTarget.position);
+                float minDistLimit = 2.0f;   
+                float maxDistLimit = 15.0f;  
 
-    // 2. ULTRA YUMUŞATILMIŞ BOYUTLANDIRMA (SmoothStep & Törpülenmiş Sınırlar)
-    float currentDist = Vector3.Distance(target.position, lockedTarget.position);
+                float distFactor = Mathf.InverseLerp(minDistLimit, maxDistLimit, currentDist);
+                distFactor = Mathf.SmoothStep(0f, 1f, distFactor);
 
-    // Mesafe sınırlarını genişletiyoruz ki boyut değişimi çok daha geniş bir alana yayılsın, ani olmasın
-    float minDistLimit = 2.0f;   
-    float maxDistLimit = 15.0f;  
+                float maxScale = 1.05f; 
+                float minScale = 0.75f; 
 
-    float distFactor = Mathf.InverseLerp(minDistLimit, maxDistLimit, currentDist);
-    
-    // SmoothStep kullanarak lineer geçişi eğrisel (S-Curve) yapıyoruz. 
-    // Bu sayede orta mesafelerde büyüklük neredeyse sabit kalacak, ani adımlarda zıplama yapmayacak.
-    distFactor = Mathf.SmoothStep(0f, 1f, distFactor);
-
-    // Boyut sınırlarını iyice birbirine yaklaştırdık (Çok az büyüsün, çok az küçülsün)
-    float maxScale = 1.05f; // Dibine girince en fazla orijinalin %105'i
-    float minScale = 0.75f; // En uzağa gidince en az orijinalin %75'i
-
-    float smoothScale = Mathf.Lerp(maxScale, minScale, distFactor);
-
-    lockOnUI.localScale = new Vector3(smoothScale, smoothScale, 1f);
-}
+                float smoothScale = Mathf.Lerp(maxScale, minScale, distFactor);
+                lockOnUI.localScale = new Vector3(smoothScale, smoothScale, 1f);
+            }
         }
         else
         {
@@ -179,23 +163,41 @@ if (lockOnUI != null)
     {
         GameObject[] enemies = GameObject.FindGameObjectsWithTag(enemyTag);
         Transform bestTarget = null;
-        float closestToCenter = Mathf.Infinity;
+        
+        // En düşük skor en iyi hedef olacağı için başlangıcı sonsuz yapıyoruz
+        float bestScore = Mathf.Infinity; 
 
         foreach (GameObject enemy in enemies)
         {
-            float dist = Vector3.Distance(target.position, enemy.transform.position);
-            if (dist > maxLockOnDistance) continue;
+            // 1. Fiziksel Mesafe Kontrolü
+            float physicalDist = Vector3.Distance(target.position, enemy.transform.position);
+            if (physicalDist > maxLockOnDistance) continue;
 
+            // 2. Ekran Sınırları Kontrolü (Kameranın arkasındaysa pas geç)
             Vector3 screenPos = Camera.main.WorldToViewportPoint(enemy.transform.position);
             if (screenPos.z < 0) continue;
 
+            // 3. Ekran Ortasına Uzaklık Hesabı
             Vector2 screenCenter = new Vector2(0.5f, 0.5f);
             Vector2 enemyPos2D = new Vector2(screenPos.x, screenPos.y);
-            float distanceFromCenter = Vector2.Distance(screenCenter, enemyPos2D);
+            float distanceFromScreenCenter = Vector2.Distance(screenCenter, enemyPos2D);
 
-            if (distanceFromCenter < closestToCenter)
+            // Ekran dışında kalanları eliyoruz (0 ile 1 arası viewport koordinatları)
+            if (screenPos.x < 0 || screenPos.x > 1 || screenPos.y < 0 || screenPos.y > 1) continue;
+
+            // --- AKILLI SOULS PUANLAMA MOTORU ---
+            // İki değeri de adil kıyaslamak için 0-1 aralığına normalize ediyoruz.
+            float distanceScore = physicalDist / maxLockOnDistance; // Yakın olanın skoru sıfıra yaklaşır (avantaj)
+            float screenScore = distanceFromScreenCenter * 2f;      // Tam ortada olanın skoru sıfır olur (avantaj)
+
+            // AĞIRLIK FORMÜLÜ: Yakınlığa %60, Ekran ortalamasına %40 önem veriyoruz.
+            // Bu oranları oyun testlerine göre (Örn: 0.5f'e 0.5f) değiştirebilirsin aga.
+            float finalScore = (distanceScore * 0.6f) + (screenScore * 0.4f);
+
+            // En düşük skora sahip olan (En ideal kombinasyon) düşmanı seçiyoruz
+            if (finalScore < bestScore)
             {
-                closestToCenter = distanceFromCenter;
+                bestScore = finalScore;
                 bestTarget = enemy.transform;
             }
         }
@@ -204,8 +206,6 @@ if (lockOnUI != null)
         {
             lockedTarget = bestTarget;
             isLockedOn = true;
-            
-            // Düşmanı bulunca UI noktasını aktif et
             if (lockOnUI != null) lockOnUI.gameObject.SetActive(true);
         }
     }
@@ -214,8 +214,6 @@ if (lockOnUI != null)
     {
         lockedTarget = null;
         isLockedOn = false;
-        
-        // Kilit açılınca UI noktasını gizle
         if (lockOnUI != null) lockOnUI.gameObject.SetActive(false);
     }
 
