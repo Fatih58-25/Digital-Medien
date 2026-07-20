@@ -155,9 +155,12 @@ public class CombatNode : Node
                 bb.currentMode = "Stalk"; 
                 
                 Vector3 dodgeDir = (bb.transform.position - bb.player.position).normalized;
-                bb.agent.isStopped = false;
-                bb.agent.speed = bb.runSpeed * 1.3f; 
-                bb.agent.SetDestination(bb.transform.position + dodgeDir * 2.5f);
+                if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
+                {
+                    bb.agent.isStopped = false;
+                    bb.agent.speed = bb.runSpeed * 1.3f;
+                    bb.agent.SetDestination(bb.transform.position + dodgeDir * 2.5f);
+                }
                 bb.animator.SetFloat("Speed", 2.0f); 
             }
         }
@@ -189,9 +192,12 @@ public class CombatNode : Node
 
     private void ExecuteChargeMovement(float dist)
     {
-        bb.agent.isStopped = false;
-        bb.agent.speed = bb.runSpeed;
-        bb.agent.SetDestination(bb.player.position);
+        if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
+        {
+            bb.agent.isStopped = false;
+            bb.agent.speed = bb.runSpeed;
+            bb.agent.SetDestination(bb.player.position);
+        }
         bb.animator.SetFloat("Speed", 2.0f); 
 
         if (dist <= pressureRange) 
@@ -204,76 +210,92 @@ public class CombatNode : Node
 
     private void ExecuteStalkMovement()
     {
-        bb.agent.isStopped = false;
-        bb.agent.speed = bb.walkSpeed;
-        bb.agent.SetDestination(bb.player.position);
+        if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
+        {
+            bb.agent.isStopped = false;
+            bb.agent.speed = bb.walkSpeed;
+            bb.agent.SetDestination(bb.player.position);
+        }
         bb.animator.SetFloat("Speed", 1.0f);
     }
 
     private void ExecuteTacticalMovement(float dist)
-{
-    bb.agent.isStopped = false;
-    
-    bb.modeTimer -= Time.deltaTime;
-    if (bb.modeTimer <= 0) 
     {
-        float dice = Random.value;
-        
-        // YENİ İHTİMAL DENGESİ:
-        // %45 Şansla etrafında dönecek (Strafe)
-        // %10 Şansla geri adım atacak (Backstep)
-        // %30 Şansla sakin yürüyecek (Stalk)
-        // %15 Şansla ANİDEN HÜCUMA KALKACAK! (DashAttack)
-        if (dice < 0.45f) bb.currentMode = "Strafe";      
-        else if (dice < 0.55f) bb.currentMode = "Backstep"; 
-        else if (dice < 0.85f) bb.currentMode = "Stalk";
-        else bb.currentMode = "DashAttack";                      
-        
-        // Uzaktayken sonsuza kadar geri kaçma freni
-        if (bb.currentMode == "Backstep" && dist > 4.5f) bb.currentMode = "Stalk";
+        // Sicherheitsabfrage vor dem Ändern des Stopp-Status
+        if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
+        {
+            bb.agent.isStopped = false;
+        }
 
-        // Hızlı kararlılık zamanlayıcısı (0.3s - 1.8s)
-        // Hile: Eğer hücum seçtiyse karar süresini biraz uzun tutuyoruz ki menzile yetişebilsin
-        bb.modeTimer = bb.currentMode == "DashAttack" ? 2.5f : Random.Range(0.3f, 1.8f); 
-        bb.strafeDirection = Random.value > 0.5f ? 1 : -1;
+        bb.modeTimer -= Time.deltaTime;
+        if (bb.modeTimer <= 0)
+        {
+            float dice = Random.value;
+
+            // YENİ İHTİMAL DENGESİ:
+            // %45 Şansla etrafında dönecek (Strafe)
+            // %10 Şansla geri adım atacak (Backstep)
+            // %30 Şansla sakin yürüyecek (Stalk)
+            // %15 Şansla ANİDEN HÜCUMA KALKACAK! (DashAttack)
+            if (dice < 0.45f) bb.currentMode = "Strafe";
+            else if (dice < 0.55f) bb.currentMode = "Backstep";
+            else if (dice < 0.85f) bb.currentMode = "Stalk";
+            else bb.currentMode = "DashAttack";
+
+            // Uzaktayken sonsuza kadar geri kaçma freni
+            if (bb.currentMode == "Backstep" && dist > 4.5f) bb.currentMode = "Stalk";
+
+            // Hızlı kararlılık zamanlayıcısı (0.3s - 1.8s)
+            // Hile: Eğer hücum seçtiyse karar süresini biraz uzun tutuyoruz ki menzile yetişebilsin
+            bb.modeTimer = bb.currentMode == "DashAttack" ? 2.5f : Random.Range(0.3f, 1.8f);
+            bb.strafeDirection = Random.value > 0.5f ? 1 : -1;
+        }
+
+        // --- MOD HAREKETLERİ UYGULAMASI (Mit Sicherheitsnetz gegen Fehlermeldungen) ---
+        if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
+        {
+            if (bb.currentMode == "DashAttack")
+            {
+                // Hücum anında koşma hızına geçiyor ve hedefe kilitleniyor!
+                bb.agent.speed = bb.runSpeed * 1.2f; // Normal koşudan da azıcık hızlı fırlasın
+                bb.agent.SetDestination(bb.player.position);
+            }
+            else if (bb.currentMode == "Strafe")
+            {
+                bb.agent.speed = bb.walkSpeed;
+                Vector3 right = Vector3.Cross(Vector3.up, (bb.player.position - bb.transform.position).normalized);
+                bb.agent.SetDestination(bb.transform.position + right * bb.strafeDirection * 1.5f);
+            }
+            else if (bb.currentMode == "Backstep")
+            {
+                bb.agent.speed = bb.walkSpeed;
+                Vector3 back = (bb.transform.position - bb.player.position).normalized;
+                bb.agent.SetDestination(bb.transform.position + back * 1.5f);
+            }
+            else // Stalk
+            {
+                bb.agent.speed = bb.walkSpeed;
+                bb.agent.SetDestination(bb.player.position);
+            }
+        }
+
+        // Die Animationen werden außerhalb der Abfrage gesetzt, damit der Animator nicht einfriert
+        if (bb.currentMode == "DashAttack")
+        {
+            bb.animator.SetFloat("Speed", 2.0f); // Koşu animasyonu
+        }
+        else
+        {
+            bb.animator.SetFloat("Speed", 1.0f); // Yürüme animasyonları
+        }
+
+        if (bb.modeTimer > 2.5f && Random.value < bb.earlyAttackChance && bb.globalCooldownTimer <= 0)
+        {
+            bb.playerIdleTimer = bb.patienceDuration + 0.5f;
+        }
     }
 
-    // --- MOD HAREKETLERİ UYGULAMASI ---
-    if (bb.currentMode == "DashAttack")
-    {
-        // Hücum anında koşma hızına geçiyor ve hedefe kilitleniyor!
-        bb.agent.speed = bb.runSpeed * 1.2f; // Normal koşudan da azıcık hızlı fırlasın
-        bb.agent.SetDestination(bb.player.position);
-        bb.animator.SetFloat("Speed", 2.0f); // Koşu animasyonu
-    }
-    else if (bb.currentMode == "Strafe") 
-    {
-        bb.agent.speed = bb.walkSpeed;
-        Vector3 right = Vector3.Cross(Vector3.up, (bb.player.position - bb.transform.position).normalized);
-        bb.agent.SetDestination(bb.transform.position + right * bb.strafeDirection * 1.5f);
-        bb.animator.SetFloat("Speed", 1.0f); 
-    } 
-    else if (bb.currentMode == "Backstep") 
-    {
-        bb.agent.speed = bb.walkSpeed;
-        Vector3 back = (bb.transform.position - bb.player.position).normalized;
-        bb.agent.SetDestination(bb.transform.position + back * 1.5f);
-        bb.animator.SetFloat("Speed", 1.0f);
-    } 
-    else // Stalk
-    { 
-        bb.agent.speed = bb.walkSpeed;
-        bb.agent.SetDestination(bb.player.position);
-        bb.animator.SetFloat("Speed", 1.0f);
-    }
-
-    if (bb.modeTimer > 2.5f && Random.value < bb.earlyAttackChance && bb.globalCooldownTimer <= 0) 
-    {
-        bb.playerIdleTimer = bb.patienceDuration + 0.5f; 
-    }
-}
-
-   private void ExecuteComboLogic()
+    private void ExecuteComboLogic()
 {
     if (bb.globalCooldownTimer > 0) return;
 
@@ -289,8 +311,11 @@ public class CombatNode : Node
     // Kombo Vuruş Tetikleyicisi
     if (bb.comboCount < bb.maxComboLimit && Time.time >= bb.nextAttackTime) 
     {
-        bb.agent.isStopped = true;
-        bb.animator.SetFloat("Speed", 0f);
+            if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
+            {
+                bb.agent.isStopped = true;
+            }
+            bb.animator.SetFloat("Speed", 0f);
         
         bb.transform.LookAt(new Vector3(bb.player.position.x, bb.transform.position.y, bb.player.position.z));
         
@@ -346,12 +371,15 @@ public class PatrolNode : Node
     public override NodeState Evaluate() 
     {
         if (bb.waypoints == null || bb.waypoints.Count == 0) return NodeState.FAILURE;
-        
-        bb.agent.isStopped = false;
-        bb.agent.speed = bb.walkSpeed;
+
         Transform target = bb.waypoints[bb.currentWaypointIndex];
-        bb.agent.SetDestination(target.position);
-        
+        if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
+        {
+            bb.agent.isStopped = false;
+            bb.agent.speed = bb.walkSpeed;
+            bb.agent.SetDestination(target.position);
+        }
+
         bb.animator.SetFloat("Speed", 1.0f); 
 
         if (Vector3.Distance(bb.transform.position, target.position) < 1.5f) 
