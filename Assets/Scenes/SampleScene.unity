@@ -2480,6 +2480,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatSystem
   attackCooldown: 0.5
+  attackAnimationDuration: 1
   attackRange: 1.5
   attackDamage: 25
   enemyLayer:
@@ -5389,6 +5390,10 @@ PrefabInstance:
     - target: {fileID: 1186990621745697855, guid: 45c40bd6b62ffc4408e9eddcaf07f2c6, type: 3}
       propertyPath: m_LocalPosition.y
       value: 59.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 2340204024519522913, guid: 45c40bd6b62ffc4408e9eddcaf07f2c6, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3067198691091307691, guid: 45c40bd6b62ffc4408e9eddcaf07f2c6, type: 3}
       propertyPath: m_LocalPosition.x

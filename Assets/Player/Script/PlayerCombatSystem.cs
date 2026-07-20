@@ -1,9 +1,11 @@
 using UnityEngine;
+using System.Collections;
 
 public class PlayerCombatSystem : MonoBehaviour
 {
     [Header("Angriff")]
     [SerializeField] private float attackCooldown = 0.4f;
+    [SerializeField] private float attackAnimationDuration = 1.0f;
     [SerializeField] private float attackRange = 1.5f;
     [SerializeField] private int attackDamage = 10;
     [SerializeField] private LayerMask enemyLayer;
@@ -25,6 +27,7 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private PlayerAnimator playerAnimator;
     private PlayerController playerController;
+    private CharacterController charController;
 
     private float lastAttackTime;
     private float lastRollTime;
@@ -36,24 +39,31 @@ public class PlayerCombatSystem : MonoBehaviour
     private int currentAttackCombo = 0;
     private int queuedComboIndex = 1;
 
+    private bool isAttacking = false;
+    private bool isStaggered = false;
+
     private void Start()
     {
         playerAnimator = GetComponent<PlayerAnimator>();
         playerController = GetComponent<PlayerController>();
+        charController = GetComponent<CharacterController>();
     }
 
     private void Update()
     {
+        if (isStaggered) return;
+
         HandleRollInput();
         HandleAttackInput();
         HandleBlockInput();
         UpdateRollState();
+        UpdateAttackState();
         UpdateComboState();
     }
 
     private void HandleAttackInput()
     {
-        if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !playerController.IsDucking)
+        if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !isAttacking && !playerController.IsDucking)
         {
             if (Time.time - lastAttackTime >= attackCooldown)
             {
@@ -64,61 +74,53 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void HandleBlockInput()
     {
-        if (isRolling || playerController.IsDucking)
+        if (!Input.GetMouseButton(1) || isRolling || isAttacking || playerController.IsDucking)
         {
             if (isBlocking) StopBlocking();
             return;
         }
-
-        if (Input.GetMouseButton(1))
-        {
-            if (!isBlocking)
-            {
-                StartBlocking();
-            }
-        }
-        else if (isBlocking)
-        {
-            StopBlocking();
-        }
+        if (Input.GetMouseButton(1) && !isBlocking) StartBlocking();
     }
+
+    public float shiftPressTime = 0f;
+    private bool isShiftPressed = false;
 
     private void HandleRollInput()
     {
-        if (Input.GetKeyDown(rollKey) && !isRolling && !playerController.IsDucking)
+        // Shift'e basıldığı an
+        if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            if (Time.time - lastRollTime >= rollCooldown)
+            shiftPressTime = Time.time;
+            isShiftPressed = true;
+        }
+
+        // Shift bırakıldığı an
+        if (Input.GetKeyUp(KeyCode.LeftShift) && isShiftPressed)
+        {
+            isShiftPressed = false;
+            float pressDuration = Time.time - shiftPressTime;
+
+            // Eğer çok kısa süre basıldıysa YUVARLAN
+            if (pressDuration < 0.2f && !isRolling && !isAttacking && !playerController.IsDucking)
             {
-                if (isBlocking) StopBlocking();
-                ResetCombo();
-                PerformRoll();
+                if (Time.time - lastRollTime >= rollCooldown)
+                {
+                    if (isBlocking) StopBlocking();
+                    ResetCombo();
+                    PerformRoll();
+                }
             }
         }
     }
 
     private void PerformAttack()
     {
+        isAttacking = true;
         lastAttackTime = Time.time;
-        queuedComboIndex = currentAttackCombo + 1;
+        queuedComboIndex = (currentAttackCombo >= maxComboCount) ? 1 : currentAttackCombo + 1;
 
-        if (queuedComboIndex > maxComboCount)
-        {
-            queuedComboIndex = 1;
-            currentAttackCombo = 0;
-        }
-
-        if (playerAnimator != null)
-        {
-            playerAnimator.PlayAttack(queuedComboIndex);
-        }
-
-        Debug.Log($"Souls-like Angriff #{queuedComboIndex} ausgeführt!");
-
-        currentAttackCombo++;
-        if (currentAttackCombo >= maxComboCount)
-        {
-            currentAttackCombo = 0;
-        }
+        playerAnimator?.PlayAttack(queuedComboIndex);
+        currentAttackCombo = (currentAttackCombo >= maxComboCount) ? 0 : currentAttackCombo + 1;
     }
 
     private void PerformRoll()
@@ -126,126 +128,67 @@ public class PlayerCombatSystem : MonoBehaviour
         lastRollTime = Time.time;
         isRolling = true;
         isInvincible = true;
-
         rollEndTime = Time.time + rollDuration;
         iframeEndTime = Time.time + iframeDuration;
-
-        if (playerAnimator != null)
-        {
-            playerAnimator.GetComponent<Animator>().SetBool("IsBlocking", false);
-            playerAnimator.GetComponent<Animator>().SetTrigger("Roll");
-        }
-
-        Debug.Log("Souls-like Rolle ausgeführt!");
+        playerAnimator?.GetComponent<Animator>().SetTrigger("Roll");
     }
 
-    private void StartBlocking()
+    private void StartBlocking() { isBlocking = true; playerAnimator?.GetComponent<Animator>().SetBool("IsBlocking", true); }
+    private void StopBlocking() { isBlocking = false; playerAnimator?.GetComponent<Animator>().SetBool("IsBlocking", false); }
+
+    public void ApplyStagger(float duration, Vector3 knockbackDir, float force)
     {
-        isBlocking = true;
-        if (playerAnimator != null)
-        {
-            playerAnimator.GetComponent<Animator>().SetBool("IsBlocking", true);
-        }
-        Debug.Log("Schild hoch! Blocken aktiv.");
+        if (isInvincible) return;
+
+        isAttacking = false;
+        isRolling = false;
+        if (isBlocking) StopBlocking();
+        ResetCombo();
+
+        isStaggered = true;
+        playerAnimator?.GetComponent<Animator>().SetTrigger("Stagger");
+        
+        StartCoroutine(ApplyKnockbackEffect(knockbackDir, force));
+        
+        CancelInvoke(nameof(ResetStagger));
+        Invoke(nameof(ResetStagger), duration);
     }
 
-    private void StopBlocking()
+   private IEnumerator ApplyKnockbackEffect(Vector3 dir, float force)
     {
-        isBlocking = false;
-        if (playerAnimator != null)
+        // Force 15'ten 3'e düştü (daha yumuşak)
+        // Timer 0.15'ten 0.08'e düştü (sadece o anlık sarsılma)
+        float timer = 0.08f; 
+        dir.y = 0;
+        
+        while (timer > 0 && charController != null)
         {
-            playerAnimator.GetComponent<Animator>().SetBool("IsBlocking", false);
-        }
-        Debug.Log("Schild runter! Blocken beendet.");
-    }
-
-    private void UpdateRollState()
-    {
-        if (isInvincible && Time.time >= iframeEndTime)
-        {
-            isInvincible = false;
-        }
-
-        if (isRolling && Time.time >= rollEndTime)
-        {
-            isRolling = false;
+            // force değerini dışarıdan 3-5 gibi bir değerle çağırınca çok daha tok duracak
+            charController.Move(dir * force * Time.deltaTime);
+            timer -= Time.deltaTime;
+            yield return null;
         }
     }
 
-    private void UpdateComboState()
-    {
-        if (Time.time - lastAttackTime > comboResetDelay && currentAttackCombo > 0)
-        {
-            ResetCombo();
-        }
-    }
+    private void ResetStagger() => isStaggered = false;
+    private void UpdateAttackState() { if (isAttacking && Time.time - lastAttackTime >= attackAnimationDuration) isAttacking = false; }
+    private void UpdateRollState() { if (isInvincible && Time.time >= iframeEndTime) isInvincible = false; if (isRolling && Time.time >= rollEndTime) isRolling = false; }
+    private void UpdateComboState() { if (Time.time - lastAttackTime > comboResetDelay && currentAttackCombo > 0) ResetCombo(); }
+    private void ResetCombo() { currentAttackCombo = 0; queuedComboIndex = 1; }
 
-    private void ResetCombo()
-    {
-        currentAttackCombo = 0;
-        queuedComboIndex = 1;
-        Debug.Log("Combo zurückgesetzt.");
-    }
-
-    // DIESE METHODE WIRD EXAKT EINMAL VOM ANIMATION EVENT AUFGERUFEN
     public void OnAttackHit()
     {
-        if (swordPosition == null) return;
-
-        // Erstellt eine Kugel an der Schwertposition und checkt, wer im EnemyLayer getroffen wurde
+        if (swordPosition == null || isStaggered) return;
         Collider[] hits = Physics.OverlapSphere(swordPosition.position, attackRange, enemyLayer);
-
-        foreach (Collider hit in hits)
+        foreach (var hit in hits)
         {
-            IDamageable damageable = hit.GetComponentInParent<IDamageable>();
-            EnemyBase enemy = hit.GetComponentInParent<EnemyBase>();
-
-            if (damageable != null)
-            {
-                int finalDamage = attackDamage;
-
-                // Multipliziert den Schaden basierend auf dem aktuellen Combo-Schritt
-                switch (queuedComboIndex)
-                {
-                    case 1:
-                        finalDamage = attackDamage;
-                        break;
-                    case 2:
-                        finalDamage = Mathf.RoundToInt(attackDamage * 1.2f);
-                        break;
-                    case 3:
-                        finalDamage = Mathf.RoundToInt(attackDamage * 1.5f);
-                        break;
-                }
-
-                damageable.TakeDamage(finalDamage);
-
-                if (enemy != null)
-                {
-                    Vector3 dir = enemy.transform.position - transform.position;
-                    enemy.ApplyKnockback(dir);
-                }
-
-                Debug.Log($"Gegner mit Combo-Schritt {queuedComboIndex} getroffen! Schaden: {finalDamage}");
-            }
-        }
-    }
-    // Diese Methode tut beim Spieler absolut nichts, 
-    // verhindert aber die Fehlermeldung, falls er dieselbe Animation nutzt!
-    public void OnEnemyAttackHit()
-    {
-        // Leer lassen!
-    }
-    private void OnDrawGizmosSelected()
-    {
-        // Zeichnet eine rote Kugel im Editor, damit du die Reichweite (Attack Range) visuell anpassen kannst
-        if (swordPosition != null)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(swordPosition.position, attackRange);
+            hit.GetComponentInParent<IDamageable>()?.TakeDamage(attackDamage);
+            hit.GetComponentInParent<EnemyBase>()?.ApplyKnockback((hit.transform.position - transform.position).normalized);
         }
     }
 
+    public bool IsAttacking => isAttacking;
+    public bool IsStaggered => isStaggered;
     public bool IsParrying => isBlocking;
     public float GetParryReduction => isBlocking ? parryReduction : 1f;
     public bool IsRolling => isRolling;
