@@ -2,6 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using GenericBehaviorTree;
 
+public enum AIMode { Stalk, Charge, Strafe, Backstep, DashAttack }
+
 public class SkeletonAI : MonoBehaviour
 {
     private Node root;
@@ -11,7 +13,6 @@ public class SkeletonAI : MonoBehaviour
     {
         bb = GetComponent<SkeletonBlackboard>();
 
-        // AĞAÇ YAPISI: Hedef bir kez bulunduysa direkt CombatNode çalışır
         root = new Selector(new List<Node>
         {
             new Sequence(new List<Node>
@@ -32,6 +33,8 @@ public class SkeletonAI : MonoBehaviour
 public class CanSeePlayer : Node 
 {
     private SkeletonBlackboard bb;
+    private readonly float sightRangeSqr = 100f; // 10f * 10f
+
     public CanSeePlayer(SkeletonBlackboard b) => bb = b;
     
     public override NodeState Evaluate() 
@@ -39,7 +42,8 @@ public class CanSeePlayer : Node
         if (bb.player == null) return NodeState.FAILURE;
         if (bb.hasTarget) return NodeState.SUCCESS;
 
-        if (Vector3.Distance(bb.transform.position, bb.player.position) < 10f) 
+        // Vector3.Distance yerine sqrMagnitude (Karekök hesabını kaldırır, CPU dostudur)
+        if ((bb.transform.position - bb.player.position).sqrMagnitude < sightRangeSqr) 
         {
             bb.hasTarget = true;
             return NodeState.SUCCESS;
@@ -50,20 +54,23 @@ public class CanSeePlayer : Node
 }
 
 // ==========================================
-// COMBAT NODE (ADVANCED BLOCK INTEGRATED)
+// COMBAT NODE (OPTIMIZED & REFACTORED)
 // ==========================================
 public class CombatNode : Node 
 {
     private SkeletonBlackboard bb;
     
-    private readonly float attackRange = 1.5f;     
-    private readonly float pressureRange = 7.0f;   
-    private readonly float runRange = 25.0f;       
-    private readonly float deaggroRange = 20.0f;
+    // Karesel Mesafeler (Performance Fix)
+    private readonly float attackRangeSqr = 2.25f;    // 1.5f ^ 2
+    private readonly float pressureRangeSqr = 49.0f;  // 7.0f ^ 2
+    private readonly float runRangeSqr = 625.0f;      // 25.0f ^ 2
+    private readonly float deaggroRangeSqr = 400.0f;  // 20.0f ^ 2
 
-    // --- KALKAN VE BLOK SÜRE YÖNETİCİLERİ ---
-    private float blockHoldTimer = 0f;       // Kalkanın ne kadar süre havada kalacağını tutar
-    private float walkBlockToggleTimer = 0f; // Üstümüze yürürken kalkan aç/kapat kararı timer'ı
+    private float blockHoldTimer = 0f;
+    private float walkBlockToggleTimer = 0f;
+    private float navmeshRepathTimer = 0f; // NavMesh sorgu sınırlayıcı
+
+    public AIMode currentMode = AIMode.Stalk;
 
     public CombatNode(SkeletonBlackboard b) => bb = b;
 
@@ -71,66 +78,59 @@ public class CombatNode : Node
     {
         if (bb.player == null) return NodeState.FAILURE;
         
-        float dist = Vector3.Distance(bb.transform.position, bb.player.position);
+        Vector3 offset = bb.player.position - bb.transform.position;
+        float distSqr = offset.sqrMagnitude;
 
-        // Deaggro Kontrolü (Çok uzaklaşınca hedefi bırak)
-        if (dist > deaggroRange) 
+        // Deaggro Kontrolü
+        if (distSqr > deaggroRangeSqr) 
         {
             ResetCombatState();
             return NodeState.FAILURE; 
         }
 
-        // Zamanlayıcıları Güncelle
         HandleTimers();
-
-        // Her Koşulda Oyuncuya Odaklan (Dodge etmediği sürece)
         RotateTowardsPlayer();
 
-        // 1. Oyuncu Saldırı Analizi, Dodge ve REFLEKS BLOK MOTORU
-        if (HandlePlayerAttackDodgeAndBlock(dist)) 
+        // 1. Dodge & Blok Refleksi
+        if (HandlePlayerAttackDodgeAndBlock(distSqr)) 
         {
             return NodeState.RUNNING;
         }
 
-        // 2. Mesafe & Mod Güncellemeleri ve Sabır Yönetimi
-        UpdateModesAndPatience(dist);
+        // 2. Mod & Sabır Güncellemesi
+        UpdateModesAndPatience(distSqr);
 
         // --- ANA DAVRANIŞ KARAR MOTORU ---
-        
-        // ÖNCELİK 1: Saldırı Menzili (Tüm süzülmeleri ezer, direkt dalar)
-        if (dist <= attackRange)
+        if (distSqr <= attackRangeSqr)
         {
             ExecuteComboLogic();
         }
-        // ÖNCELİK 2: Uzak Mesafe Koşusu veya Sabır Taşması (Charge)
-        else if (dist > runRange || bb.currentMode == "Charge") 
+        else if (distSqr > runRangeSqr || currentMode == AIMode.Charge) 
         {
-            ExecuteChargeMovement(dist);
+            ExecuteChargeMovement();
         }
-        // ÖNCELİK 3: Orta-Uzak Mesafe (Asil Souls Yürüyüş Koridoru)
-        else if (dist > pressureRange && dist <= runRange) 
+        else if (distSqr > pressureRangeSqr && distSqr <= runRangeSqr) 
         {
             ExecuteStalkMovement();
         }
-        // ÖNCELİK 4: Yakın Taktiksel Bölge (Strafe, Backstep, Stalk)
-        else if (dist > attackRange && dist <= pressureRange) 
+        else // Takitksel Alan (attackRangeSqr < distSqr <= pressureRangeSqr)
         {
-            ExecuteTacticalMovement(dist);
+            ExecuteTacticalMovement(distSqr);
         }
 
         return NodeState.RUNNING;
     }
 
-    #region OPTİMİZASYON METODLARI (CLEAN CODE)
+    #region OPTİMİZASYON METODLARI
 
     private void HandleTimers()
     {
         if (bb.agent.updateRotation) bb.agent.updateRotation = false;
         if (bb.globalCooldownTimer > 0) bb.globalCooldownTimer -= Time.deltaTime;
 
-        // Kalkan zamanlayıcılarını zamanla azalt
         if (blockHoldTimer > 0) blockHoldTimer -= Time.deltaTime;
         if (walkBlockToggleTimer > 0) walkBlockToggleTimer -= Time.deltaTime;
+        if (navmeshRepathTimer > 0) navmeshRepathTimer -= Time.deltaTime;
     }
 
     private void RotateTowardsPlayer()
@@ -146,14 +146,13 @@ public class CombatNode : Node
         }
     }
 
-    private bool HandlePlayerAttackDodgeAndBlock(float dist)
+    private bool HandlePlayerAttackDodgeAndBlock(float distSqr)
     {
         if (!bb.isPlayerAttacking) 
         {
             bb.playerIdleTimer += Time.deltaTime;
 
-            // Kalkan süresi bittiyse ve özel kalkan gerektiren bir modda (Backstep) değilse kalkanı indir
-            if (blockHoldTimer <= 0 && bb.currentMode != "Backstep")
+            if (blockHoldTimer <= 0 && currentMode != AIMode.Backstep)
             {
                 SetBlockingState(false);
             }
@@ -162,31 +161,25 @@ public class CombatNode : Node
         {
             bb.playerIdleTimer = 0f;
             
-            if (dist <= pressureRange && !bb.isDodging) 
+            if (distSqr <= pressureRangeSqr && !bb.isDodging) 
             {
                 float dice = Random.value;
 
-                // %30 İhtimalle Dodge At
-                if (dice < 0.30f)
+                if (dice < 0.30f) // Dodge
                 {
                     blockHoldTimer = 0f;
-                    SetBlockingState(false); // Dodge atarken kalkan iner
+                    SetBlockingState(false);
                     bb.isDodging = true;
                     bb.dodgeTimer = 0.6f;
-                    bb.currentMode = "Stalk"; 
+                    currentMode = AIMode.Stalk; 
                     
                     Vector3 dodgeDir = (bb.transform.position - bb.player.position).normalized;
-                    if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
-                    {
-                        bb.agent.isStopped = false;
-                        bb.agent.speed = bb.runSpeed * 1.3f;
-                        bb.agent.SetDestination(bb.transform.position + dodgeDir * 2.5f);
-                    }
+                    SetAgentDestination(bb.transform.position + dodgeDir * 2.5f, bb.runSpeed * 1.3f, true);
+                    
                     bb.animator.SetFloat("Speed", 2.0f); 
                     return true;
                 }
-                // %50 İhtimalle KALKANI KALDIR (1.5 - 2.5 sn süresince tut!)
-                else if (dice < 0.80f)
+                else if (dice < 0.80f) // Block
                 {
                     blockHoldTimer = Random.Range(1.5f, 2.5f);
                     SetBlockingState(true);
@@ -197,164 +190,96 @@ public class CombatNode : Node
         if (bb.isDodging) 
         {
             bb.dodgeTimer -= Time.deltaTime;
-            if (bb.dodgeTimer <= 0) bb.isDodging = false;
+            if (bb.dodgeTimer <= 0) 
+            {
+                bb.isDodging = false;
+                bb.agent.speed = bb.walkSpeed; // Dodge bittiğinde hızı normale çek
+            }
             return true;
         }
         return false;
     }
 
-    private void UpdateModesAndPatience(float dist)
+    private void UpdateModesAndPatience(float distSqr)
     {
-        // Dibindeyse Charge modunu zorla kır, sakinleş
-        if (dist <= pressureRange && bb.currentMode == "Charge") 
+        if (distSqr <= pressureRangeSqr && currentMode == AIMode.Charge) 
         {
             bb.playerIdleTimer = 0f;
-            bb.currentMode = "Stalk";
+            currentMode = AIMode.Stalk;
         }
 
-        // Sabır limiti taşma kontrolü (Sadece uzaktayken sabrı taşabilir)
-        if (bb.playerIdleTimer >= bb.patienceDuration && dist > pressureRange) 
+        if (bb.playerIdleTimer >= bb.patienceDuration && distSqr > pressureRangeSqr) 
         { 
-            bb.currentMode = "Charge";
+            currentMode = AIMode.Charge;
         }
     }
 
-    private void ExecuteChargeMovement(float dist)
+    private void ExecuteChargeMovement()
     {
         blockHoldTimer = 0f;
-        SetBlockingState(false); // Hücum koşusunda kalkan kesin kapalı
+        SetBlockingState(false);
 
-        if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
-        {
-            bb.agent.isStopped = false;
-            bb.agent.speed = bb.runSpeed;
-            bb.agent.SetDestination(bb.player.position);
-        }
+        SetAgentDestination(bb.player.position, bb.runSpeed);
         bb.animator.SetFloat("Speed", 2.0f); 
-
-        if (dist <= pressureRange) 
-        {
-            bb.currentMode = "Stalk";
-            bb.playerIdleTimer = 0f;
-            bb.modeTimer = 0f; 
-        }
     }
 
     private void ExecuteStalkMovement()
     {
-        if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
-        {
-            bb.agent.isStopped = false;
-            bb.agent.speed = bb.walkSpeed;
-            bb.agent.SetDestination(bb.player.position);
-        }
+        SetAgentDestination(bb.player.position, bb.walkSpeed);
         bb.animator.SetFloat("Speed", 1.0f);
 
-        // Düz yürürken rastgele kalkan kaldırma/indirme ihtimali
         if (walkBlockToggleTimer <= 0 && blockHoldTimer <= 0)
         {
             walkBlockToggleTimer = Random.Range(1.5f, 3.5f);
-            if (Random.value < 0.40f)
-            {
-                blockHoldTimer = Random.Range(1.5f, 2.5f);
-                SetBlockingState(true);
-            }
-            else
-            {
-                SetBlockingState(false);
-            }
+            SetBlockingState(Random.value < 0.40f);
+            if (bb.animator.GetBool("IsBlocking")) blockHoldTimer = Random.Range(1.5f, 2.5f);
         }
     }
 
-    private void ExecuteTacticalMovement(float dist)
+    private void ExecuteTacticalMovement(float distSqr)
     {
-        if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
-        {
-            bb.agent.isStopped = false;
-        }
-
         bb.modeTimer -= Time.deltaTime;
         if (bb.modeTimer <= 0)
         {
             float dice = Random.value;
 
-            if (dice < 0.45f) bb.currentMode = "Strafe";
-            else if (dice < 0.55f) bb.currentMode = "Backstep";
-            else if (dice < 0.85f) bb.currentMode = "Stalk";
-            else bb.currentMode = "DashAttack";
+            if (dice < 0.45f) currentMode = AIMode.Strafe;
+            else if (dice < 0.55f) currentMode = AIMode.Backstep;
+            else if (dice < 0.85f) currentMode = AIMode.Stalk;
+            else currentMode = AIMode.DashAttack;
 
-            if (bb.currentMode == "Backstep" && dist > 4.5f) bb.currentMode = "Stalk";
+            if (currentMode == AIMode.Backstep && distSqr > 20.25f) // 4.5f ^ 2
+                currentMode = AIMode.Stalk;
 
-            bb.modeTimer = bb.currentMode == "DashAttack" ? 2.5f : Random.Range(0.3f, 1.8f);
+            bb.modeTimer = currentMode == AIMode.DashAttack ? 2.5f : Random.Range(0.3f, 1.8f);
             bb.strafeDirection = Random.value > 0.5f ? 1 : -1;
         }
 
-        // --- MOD BAZLI KALKAN KARARLARI ---
-        if (bb.currentMode == "Backstep")
-        {
-            SetBlockingState(true); // Geri adım atarken kesinlikle kalkan kaldırır!
-        }
-        else if (bb.currentMode == "DashAttack")
-        {
-            blockHoldTimer = 0f;
-            SetBlockingState(false); // Dash atarken kalkan iner
-        }
-        else // Strafe veya Stalk
-        {
-            if (blockHoldTimer <= 0 && walkBlockToggleTimer <= 0)
-            {
-                walkBlockToggleTimer = Random.Range(1.5f, 3.0f);
-                if (Random.value < 0.35f)
-                {
-                    blockHoldTimer = Random.Range(1.2f, 2.0f);
-                    SetBlockingState(true);
-                }
-                else
-                {
-                    SetBlockingState(false);
-                }
-            }
-        }
+        // Kalkan Kararları
+        if (currentMode == AIMode.Backstep) SetBlockingState(true);
+        else if (currentMode == AIMode.DashAttack) { blockHoldTimer = 0f; SetBlockingState(false); }
 
-        // --- MOD HAREKETLERİ UYGULAMASI ---
-        if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
+        // Hareketler
+        switch (currentMode)
         {
-            if (bb.currentMode == "DashAttack")
-            {
-                bb.agent.speed = bb.runSpeed * 1.2f;
-                bb.agent.SetDestination(bb.player.position);
-            }
-            else if (bb.currentMode == "Strafe")
-            {
-                bb.agent.speed = bb.walkSpeed;
+            case AIMode.DashAttack:
+                SetAgentDestination(bb.player.position, bb.runSpeed * 1.2f);
+                bb.animator.SetFloat("Speed", 2.0f);
+                break;
+            case AIMode.Strafe:
                 Vector3 right = Vector3.Cross(Vector3.up, (bb.player.position - bb.transform.position).normalized);
-                bb.agent.SetDestination(bb.transform.position + right * bb.strafeDirection * 1.5f);
-            }
-            else if (bb.currentMode == "Backstep")
-            {
-                bb.agent.speed = bb.walkSpeed * 0.7f; // Kalkanlı geri çekilme yavaşlığı
+                SetAgentDestination(bb.transform.position + right * bb.strafeDirection * 1.5f, bb.walkSpeed);
+                bb.animator.SetFloat("Speed", 1.0f);
+                break;
+            case AIMode.Backstep:
                 Vector3 back = (bb.transform.position - bb.player.position).normalized;
-                bb.agent.SetDestination(bb.transform.position + back * 1.5f);
-            }
-            else // Stalk
-            {
-                bb.agent.speed = bb.walkSpeed;
-                bb.agent.SetDestination(bb.player.position);
-            }
-        }
-
-        if (bb.currentMode == "DashAttack")
-        {
-            bb.animator.SetFloat("Speed", 2.0f);
-        }
-        else
-        {
-            bb.animator.SetFloat("Speed", 1.0f);
-        }
-
-        if (bb.modeTimer > 2.5f && Random.value < bb.earlyAttackChance && bb.globalCooldownTimer <= 0)
-        {
-            bb.playerIdleTimer = bb.patienceDuration + 0.5f;
+                SetAgentDestination(bb.transform.position + back * 1.5f, bb.walkSpeed * 0.7f);
+                bb.animator.SetFloat("Speed", 1.0f);
+                break;
+            default: // Stalk
+                SetAgentDestination(bb.player.position, bb.walkSpeed);
+                bb.animator.SetFloat("Speed", 1.0f);
+                break;
         }
     }
 
@@ -362,11 +287,10 @@ public class CombatNode : Node
     {
         if (bb.globalCooldownTimer > 0) return;
 
-        // Vurmaya karar verdiği an kalkanı ve timer'ı şak diye indirir
         blockHoldTimer = 0f;
         SetBlockingState(false);
 
-        if (bb.currentMode != "DashAttack" && bb.isPlayerAttacking && bb.comboCount == 0 && Random.value < 0.50f) return;
+        if (currentMode != AIMode.DashAttack && bb.isPlayerAttacking && bb.comboCount == 0 && Random.value < 0.50f) return;
 
         if (bb.comboCount == 0) 
         {
@@ -375,28 +299,19 @@ public class CombatNode : Node
 
         if (bb.comboCount < bb.maxComboLimit && Time.time >= bb.nextAttackTime) 
         {
-            if (bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh)
-            {
-                bb.agent.isStopped = true;
-            }
-            bb.animator.SetFloat("Speed", 0f);
+            if (IsAgentValid()) bb.agent.isStopped = true;
             
+            bb.animator.SetFloat("Speed", 0f);
             bb.transform.LookAt(new Vector3(bb.player.position.x, bb.transform.position.y, bb.player.position.z));
             
             int currentStep = bb.comboCount + 1;
-            
             bb.animator.SetInteger("AttackTyp", currentStep); 
             bb.animator.SetTrigger("Attack");
-            
-            Debug.Log($"Düşman Kombo Adımı #{currentStep} Tetiklendi! (Mode: {bb.currentMode})");
 
             bb.comboCount++;
             bb.nextAttackTime = Time.time + 0.9f; 
             
-            if (bb.currentMode == "DashAttack")
-            {
-                bb.currentMode = "Stalk";
-            }
+            if (currentMode == AIMode.DashAttack) currentMode = AIMode.Stalk;
         }
         
         if (bb.comboCount >= bb.maxComboLimit) 
@@ -405,17 +320,31 @@ public class CombatNode : Node
             bb.playerIdleTimer = 0f;
             bb.globalCooldownTimer = Random.Range(bb.minComboCooldown, bb.maxComboCooldown); 
             
-            bb.currentMode = "Backstep"; // Kombo bittiğinde kalkanı kaldırıp geriye adım atar
+            currentMode = AIMode.Backstep;
             bb.modeTimer = 0f; 
         }
     }
 
+    // Helper: NavMesh sorgularını limitleyen performans dostu SetDestination
+    private void SetAgentDestination(Vector3 target, float speed, bool forceImmediate = false)
+    {
+        if (!IsAgentValid()) return;
+
+        bb.agent.isStopped = false;
+        bb.agent.speed = speed;
+
+        if (forceImmediate || navmeshRepathTimer <= 0f)
+        {
+            bb.agent.SetDestination(target);
+            navmeshRepathTimer = 0.1f; // Saniyede max 10 kez repath yapar (Süper Optimizasyon)
+        }
+    }
+
+    private bool IsAgentValid() => bb.agent != null && bb.agent.isActiveAndEnabled && bb.agent.isOnNavMesh;
+
     private void SetBlockingState(bool state)
     {
-        if (bb.animator != null)
-        {
-            bb.animator.SetBool("IsBlocking", state);
-        }
+        if (bb.animator != null) bb.animator.SetBool("IsBlocking", state);
     }
 
     private void ResetCombatState()
@@ -426,7 +355,7 @@ public class CombatNode : Node
         bb.hasTarget = false;
         bb.comboCount = 0;
         bb.isDodging = false;
-        bb.agent.updateRotation = true;
+        if (bb.agent != null) bb.agent.updateRotation = true;
     }
 
     #endregion
@@ -454,7 +383,8 @@ public class PatrolNode : Node
 
         bb.animator.SetFloat("Speed", 1.0f); 
 
-        if (Vector3.Distance(bb.transform.position, target.position) < 1.5f) 
+        // 1.5f ^ 2 = 2.25f
+        if ((bb.transform.position - target.position).sqrMagnitude < 2.25f) 
         {
             bb.currentWaypointIndex = Random.Range(0, bb.waypoints.Count);
         }
