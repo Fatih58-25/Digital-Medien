@@ -2,10 +2,8 @@ using UnityEngine;
 
 public class PlayerHealth : MonoBehaviour, IDamageable
 {
-    [Header("Health")]
     [SerializeField] private int maxHealth = 100;
     private int currentHealth;
-
     private PlayerCombatSystem combatSystem;
     private Animator animator;
     private bool isDead = false;
@@ -17,61 +15,41 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         animator = GetComponentInChildren<Animator>();
     }
 
-    public void TakeDamage(int damage)
+    // Düşman hasar verdiğinde bunu kullanacak: TakeDamage(damage, attackerTransform)
+    public void TakeDamage(int damage, Transform attacker = null)
     {
         if (isDead) return;
 
-        // 1. Pr�fen, ob der Spieler in der Rolle (iFrames) ist -> Kein Schaden
-        if (combatSystem != null && combatSystem.IsInvincible)
-        {
-            Debug.Log("Schaden ausgewichen durch Rolle (iFrames)!");
-            return;
-        }
+        if (combatSystem != null && combatSystem.IsInvincible) return;
 
         int finalDamage = damage;
 
-        // 2. Pr�fen, ob der Spieler blockt -> Schaden reduzieren
         if (combatSystem != null && combatSystem.IsParrying)
         {
-            // Nutzt den parryReduction-Wert (z.B. 0.7 bedeutet 70% weniger Schaden)
-            float reduction = combatSystem.GetParryReduction;
-            finalDamage = Mathf.RoundToInt(damage * (1f - reduction));
-
-            if (animator != null)
-            {
-                animator.SetTrigger("BlockHit"); // Optional: Animation f�r Schildtreffer
-            }
-            Debug.Log($"Angriff geblockt! Schaden reduziert von {damage} auf {finalDamage}");
+            finalDamage = Mathf.RoundToInt(damage * (1f - combatSystem.GetParryReduction));
+            animator?.SetTrigger("BlockHit");
         }
         else
         {
-            // Normaler Treffer -> Hit-Animation abspielen
-            if (animator != null)
+            if (combatSystem != null)
             {
-                animator.SetTrigger("Hit"); // Standard Hit-Animation
+                // Düşmanın yönünü hesapla ve geri tepmeyi tetikle
+                Vector3 hitDir = (attacker != null) ? (transform.position - attacker.position).normalized : Vector3.back;
+                combatSystem.ApplyStagger(0.5f, hitDir, 3f);
             }
+            else animator?.SetTrigger("Hit");
         }
 
-        // 3. Schaden abziehen
         currentHealth -= finalDamage;
-        Debug.Log($"Spieler nimmt {finalDamage} Schaden! HP: {currentHealth}/{maxHealth}");
-
-        if (currentHealth <= 0)
-        {
-            Die();
-        }
+        if (currentHealth <= 0) Die();
     }
+
+    // IDamageable arayüzü için standart overload
+    public void TakeDamage(int damage) => TakeDamage(damage, null);
 
     private void Die()
     {
         isDead = true;
-        Debug.Log("Spieler ist gestorben!");
-
-        if (animator != null)
-        {
-            animator.SetTrigger("Die"); // Todesanimation f�r den Spieler
-        }
-
-        // Hier kannst du sp�ter ein Respawn-System oder "Game Over" aufrufen
+        animator?.SetTrigger("Die");
     }
 }

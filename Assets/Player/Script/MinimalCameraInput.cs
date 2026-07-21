@@ -1,9 +1,10 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class SoulsCamera : MonoBehaviour
 {
     [Header("References")]
-    public Transform target; // Karakter (Player)
+    public Transform target; 
 
     [Header("Distance Settings")]
     public float distance = 4.0f; 
@@ -24,16 +25,17 @@ public class SoulsCamera : MonoBehaviour
     public float idleAutoFollowDelay = 1.0f; 
 
     [Header("Souls Lock-On Settings")]
-    public string enemyTag = "Enemy";     // Düşman objelerinin Tag'i neyse buraya yaz (Örn: Enemy)
-    public float maxLockOnDistance = 15f; // En fazla kaç metreden kilitlenebilsin
-    public KeyCode lockOnKey = KeyCode.Q; // Kilitlenme tuşu
+    public string enemyTag = "Enemy";     
+    public float maxLockOnDistance = 15f; 
+    public KeyCode lockOnKey = KeyCode.Q; 
+    public RectTransform lockOnUI;        
+    public float lockOnHeightOffset = 1.2f; 
 
     private float x = 0.0f;
     private float y = 0.0f;
     private float lastMouseInputTime;
     private Vector3 cameraTargetCenter; 
 
-    // Kilitlenme Değişkenleri
     private Transform lockedTarget = null;
     private bool isLockedOn = false;
 
@@ -50,24 +52,18 @@ public class SoulsCamera : MonoBehaviour
         {
             cameraTargetCenter = target.position;
         }
+
+        if (lockOnUI != null) lockOnUI.gameObject.SetActive(false);
     }
 
     void Update()
     {
-        // Q tuşuna basıldığında kilidi aç veya en yakın düşmanı ara
         if (Input.GetKeyDown(lockOnKey))
         {
-            if (isLockedOn)
-            {
-                UnlockTarget();
-            }
-            else
-            {
-                FindBestTarget();
-            }
+            if (isLockedOn) UnlockTarget();
+            else FindBestTarget();
         }
 
-        // Eğer kilitliysek ama düşman çok uzaklaştıysa veya öldüyse (yok olduysa) kilidi otomatik kaldır
         if (isLockedOn)
         {
             if (lockedTarget == null || Vector3.Distance(target.position, lockedTarget.position) > maxLockOnDistance)
@@ -81,9 +77,8 @@ public class SoulsCamera : MonoBehaviour
     {
         if (!target) return;
 
-        // 1. ÖLÜ BÖLGE (DEADZONE) HESAPLAMASI
+        // 1. ÖLÜ BÖLGE HESAPLAMASI
         Vector3 distanceToTarget = target.position - cameraTargetCenter;
-        
         if (distanceToTarget.magnitude > deadzoneRadius)
         {
             Vector3 targetCenterPos = target.position - (distanceToTarget.normalized * deadzoneRadius);
@@ -93,38 +88,47 @@ public class SoulsCamera : MonoBehaviour
         // 2. ROTASYON HESAPLAMALARI
         if (isLockedOn && lockedTarget != null)
         {
-            // --- KİLİTLENME AKTİFKEN ROTASYON ---
-            // Kameranın hayali merkezinden düşmana doğru olan yönü bul
-         // --- KİLİTLENME AKTİFKEN ROTASYON (Souls Düzleştirilmiş Bakış) ---
-// Kameranın hayali merkezinden düşmana doğru olan yönü bul
-Vector3 dirToEnemy = lockedTarget.position - cameraTargetCenter;
+            Vector3 dirToEnemy = lockedTarget.position - cameraTargetCenter;
+            dirToEnemy.y = 0; 
 
-// Hile Burada: Düşman uzun boylu olsa bile kameranın yukarı bakmasını engellemek için
-// Y eksenindeki yükseklik farkını sıfırlıyoruz. Kamera hep düz bir hatta kilitleniyor.
-dirToEnemy.y = 0; 
+            if (dirToEnemy != Vector3.zero)
+            {
+                Quaternion lookRot = Quaternion.LookRotation(dirToEnemy);
+                x = Mathf.LerpAngle(x, lookRot.eulerAngles.y, 10f * Time.deltaTime);
+                y = Mathf.LerpAngle(y, 15f, 10f * Time.deltaTime); 
+                y = ClampAngle(y, yMinLimit, yMaxLimit);
+            }
 
-if (dirToEnemy != Vector3.zero)
-{
-    // Bu düzleştirilmiş yöne bakacak rotasyonu hesapla
-    Quaternion lookRot = Quaternion.LookRotation(dirToEnemy);
-    
-    // Mevcut X ve Y açılarını yumuşakça eşitle
-    x = Mathf.LerpAngle(x, lookRot.eulerAngles.y, 10f * Time.deltaTime);
-    
-    // Y eksenini (yukarı-aşağı eğimi) tamamen düşmana bırakmıyoruz, 
-    // sabit bir açıda tutuyoruz (Örn: 15 derece aşağı doğru baksın ki yukardan baksın)
-    y = Mathf.LerpAngle(y, 15f, 10f * Time.deltaTime); 
-    y = ClampAngle(y, yMinLimit, yMaxLimit);
-}
+            lastMouseInputTime = Time.time;
 
-lastMouseInputTime = Time.time;
+            // --- UI TAKİP VE TİTREMESİZ ÖLÇEKLENDİRME ---
+            if (lockOnUI != null)
+            {
+                Vector3 worldTargetPos = lockedTarget.position + Vector3.up * lockOnHeightOffset;
+                Vector3 screenPos = Camera.main.WorldToScreenPoint(worldTargetPos);
+
+                Vector3 currentVelocity = Vector3.zero;
+                lockOnUI.position = Vector3.SmoothDamp(lockOnUI.position, screenPos, ref currentVelocity, 0.02f);
+
+                float currentDist = Vector3.Distance(target.position, lockedTarget.position);
+                float minDistLimit = 2.0f;   
+                float maxDistLimit = 15.0f;  
+
+                float distFactor = Mathf.InverseLerp(minDistLimit, maxDistLimit, currentDist);
+                distFactor = Mathf.SmoothStep(0f, 1f, distFactor);
+
+                float maxScale = 1.05f; 
+                float minScale = 0.75f; 
+
+                float smoothScale = Mathf.Lerp(maxScale, minScale, distFactor);
+                lockOnUI.localScale = new Vector3(smoothScale, smoothScale, 1f);
+            }
         }
         else
         {
             // --- NORMAL MANUEL/OTOMATİK KAMERA ROTASYONU ---
             float mouseX = Input.GetAxis("Mouse X");
             float mouseY = Input.GetAxis("Mouse Y");
-
             float inputX = Input.GetAxisRaw("Horizontal");
             float inputY = Input.GetAxisRaw("Vertical");
 
@@ -133,13 +137,11 @@ lastMouseInputTime = Time.time;
                 x += mouseX * xSpeed * 0.02f;
                 y -= mouseY * ySpeed * 0.02f;
                 y = ClampAngle(y, yMinLimit, yMaxLimit);
-
                 lastMouseInputTime = Time.time;
             }
             else
             {
                 float playerSpeed = new Vector3(inputX, 0, inputY).magnitude;
-                
                 if (playerSpeed > 0.1f && inputY >= 0f && Time.time - lastMouseInputTime > idleAutoFollowDelay)
                 {
                     float targetRotationY = target.eulerAngles.y;
@@ -150,7 +152,6 @@ lastMouseInputTime = Time.time;
 
         // 3. POZİSYON VE ROTASYON UYGULAMA
         Quaternion rotation = Quaternion.Euler(y, x, 0);
-
         Vector3 negDistance = new Vector3(0.0f, 0.0f, -distance);
         Vector3 position = rotation * negDistance + (cameraTargetCenter + Vector3.up * height);
 
@@ -158,45 +159,54 @@ lastMouseInputTime = Time.time;
         transform.position = position;
     }
 
-    // --- AKILLI HEDEF BULMA MOTORU ---
     private void FindBestTarget()
     {
-        // Sahnedeki tüm düşmanları bul
         GameObject[] enemies = GameObject.FindGameObjectsWithTag(enemyTag);
         Transform bestTarget = null;
-        float closestToCenter = Mathf.Infinity;
+        
+        // En düşük skor en iyi hedef olacağı için başlangıcı sonsuz yapıyoruz
+        float bestScore = Mathf.Infinity; 
 
         foreach (GameObject enemy in enemies)
         {
-            float dist = Vector3.Distance(target.position, enemy.transform.position);
-            
-            // Eğer düşman kilitlenme menzili dışındaysa pas geç
-            if (dist > maxLockOnDistance) continue;
+            // 1. Fiziksel Mesafe Kontrolü
+            float physicalDist = Vector3.Distance(target.position, enemy.transform.position);
+            if (physicalDist > maxLockOnDistance) continue;
 
-            // Düşmanın ekrandaki pozisyonunu bul (Kamera ortasına yakınlık testi için)
+            // 2. Ekran Sınırları Kontrolü (Kameranın arkasındaysa pas geç)
             Vector3 screenPos = Camera.main.WorldToViewportPoint(enemy.transform.position);
-            
-            // Düşman kameranın arkasındaysa pas geç (screenPos.z ekrana olan uzaklıktır, eksi olamaz)
             if (screenPos.z < 0) continue;
 
-            // Ekranın tam ortası (0.5, 0.5) noktasıdır. Düşmanın ortayap olan uzaklığını hesapla
+            // 3. Ekran Ortasına Uzaklık Hesabı
             Vector2 screenCenter = new Vector2(0.5f, 0.5f);
             Vector2 enemyPos2D = new Vector2(screenPos.x, screenPos.y);
-            float distanceFromCenter = Vector2.Distance(screenCenter, enemyPos2D);
+            float distanceFromScreenCenter = Vector2.Distance(screenCenter, enemyPos2D);
 
-            // Ekranın ortasına en yakın olan düşmanı seç
-            if (distanceFromCenter < closestToCenter)
+            // Ekran dışında kalanları eliyoruz (0 ile 1 arası viewport koordinatları)
+            if (screenPos.x < 0 || screenPos.x > 1 || screenPos.y < 0 || screenPos.y > 1) continue;
+
+            // --- AKILLI SOULS PUANLAMA MOTORU ---
+            // İki değeri de adil kıyaslamak için 0-1 aralığına normalize ediyoruz.
+            float distanceScore = physicalDist / maxLockOnDistance; // Yakın olanın skoru sıfıra yaklaşır (avantaj)
+            float screenScore = distanceFromScreenCenter * 2f;      // Tam ortada olanın skoru sıfır olur (avantaj)
+
+            // AĞIRLIK FORMÜLÜ: Yakınlığa %60, Ekran ortalamasına %40 önem veriyoruz.
+            // Bu oranları oyun testlerine göre (Örn: 0.5f'e 0.5f) değiştirebilirsin aga.
+            float finalScore = (distanceScore * 0.6f) + (screenScore * 0.4f);
+
+            // En düşük skora sahip olan (En ideal kombinasyon) düşmanı seçiyoruz
+            if (finalScore < bestScore)
             {
-                closestToCenter = distanceFromCenter;
+                bestScore = finalScore;
                 bestTarget = enemy.transform;
             }
         }
 
-        // Eğer uygun bir düşman bulunduysa kilitle
         if (bestTarget != null)
         {
             lockedTarget = bestTarget;
             isLockedOn = true;
+            if (lockOnUI != null) lockOnUI.gameObject.SetActive(true);
         }
     }
 
@@ -204,6 +214,7 @@ lastMouseInputTime = Time.time;
     {
         lockedTarget = null;
         isLockedOn = false;
+        if (lockOnUI != null) lockOnUI.gameObject.SetActive(false);
     }
 
     private float ClampAngle(float angle, float min, float max)

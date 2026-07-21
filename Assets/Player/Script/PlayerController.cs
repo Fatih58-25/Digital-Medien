@@ -17,12 +17,16 @@ public class PlayerController : MonoBehaviour
     private Vector3 moveDirection;
     private float verticalVelocity;
 
+    // Combat Sistem Referansı (Saldırı durumunu kontrol etmek için)
+    private PlayerCombatSystem combatSystem;
+
     // Wird vom Combat-System abgefragt
     public bool IsDucking { get; private set; } = false;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
+        combatSystem = GetComponent<PlayerCombatSystem>(); // Combat sistemi otomatik bulur
 
         // Falls im Inspector nicht zugewiesen, automatisch suchen
         if (playerAnimator == null)
@@ -47,55 +51,77 @@ public class PlayerController : MonoBehaviour
 
     void MovePlayer()
     {
+        bool isAttacking = combatSystem != null && combatSystem.IsAttacking;
+
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector3 inputDir = new Vector3(horizontal, 0f, vertical).normalized;
 
         float currentSpeed = 0f;
-        float actualMoveSpeed = moveSpeed; // Basis-Geschwindigkeit (5)
+        float actualMoveSpeed = moveSpeed;
 
-        // SPRINT-CHECK: Wenn Shift gedrückt wird UND wir uns bewegen
-        bool isSprinting = Input.GetKey(KeyCode.LeftShift) && inputDir.magnitude >= 0.1f;
+        // Shift'e basılı tutma süresi 0.2 saniyeyi geçtiyse koşmaya başlar
+        bool isSprinting = Input.GetKey(KeyCode.LeftShift) && 
+                           (Time.time - combatSystem.shiftPressTime) > 0.2f && 
+                           inputDir.magnitude >= 0.1f &&
+                           !isAttacking; // Saldırı anında koşamasın
 
-        if (inputDir.magnitude >= 0.1f)
+        // Kamera Yönlerini Hesapla
+        Vector3 camForward = cameraTransform.forward;
+        camForward.y = 0;
+        camForward.Normalize();
+
+        Vector3 camRight = cameraTransform.right;
+        camRight.y = 0;
+        camRight.Normalize();
+
+        // ⚔️ SALDIRI ANINDAKİ HAREKET KONTROLÜ
+        if (isAttacking)
         {
-            Vector3 camForward = cameraTransform.forward;
-            camForward.y = 0;
-            camForward.Normalize();
-
-            Vector3 camRight = cameraTransform.right;
-            camRight.y = 0;
-            camRight.Normalize();
-
-            moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
-
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-
-            // Wenn wir sprinten, erhöhen wir das Tempo im Spiel und setzen den Animations-Wert auf 2
-            if (isSprinting)
+            if (vertical > 0.1f) // Sadece ileri
             {
-                actualMoveSpeed = moveSpeed * 1.3f; // Macht den Charakter 60% schneller beim Rennen
-                currentSpeed = 2f; // 2 bedeutet "Rennen" im Animator
+                moveDirection = camForward * vertical;
+                actualMoveSpeed = moveSpeed * 0.8f;
+                currentSpeed = 1f;
             }
             else
             {
-                currentSpeed = 1f; // 1 bedeutet "Gehen/Laufen"
+                moveDirection = Vector3.zero;
+                currentSpeed = 0f;
+            }
+        }
+        // 🏃 NORMAL HAREKET (Saldırı yokken)
+        else if (inputDir.magnitude >= 0.1f)
+        {
+            moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
+
+            // Karakter basılan yöne pürüzsüz döner
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+
+            if (isSprinting)
+            {
+                actualMoveSpeed = moveSpeed * 1.5f; // Koşma hızı
+                currentSpeed = 2f;
+            }
+            else
+            {
+                currentSpeed = 1f;
             }
         }
         else
         {
             moveDirection = Vector3.zero;
-            currentSpeed = 0f; // 0 bedeutet "Stillstand"
+            currentSpeed = 0f;
         }
 
         // ========================================================
-        // ZIPLAMA & SMART GRAVITY (Dein perfekt eingestellter Sprung)
+        // ZIPLAMA & YERÇEKİMİ
         // ========================================================
         if (controller.isGrounded)
         {
             verticalVelocity = -2f;
-            if (Input.GetButtonDown("Jump"))
+            if (!isAttacking && Input.GetButtonDown("Jump"))
             {
                 verticalVelocity = Mathf.Sqrt(jumpHeight * 5f * gravity);
             }
@@ -106,7 +132,6 @@ public class PlayerController : MonoBehaviour
             else verticalVelocity -= gravity * 5f * Time.deltaTime;
         }
 
-        // Werte an den Animator übergeben
         if (playerAnimator != null)
         {
             playerAnimator.SetMovementSpeed(currentSpeed);
