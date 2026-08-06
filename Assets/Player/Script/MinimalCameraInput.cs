@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+
 public class SoulsCamera : MonoBehaviour
 {
     [Header("References")]
@@ -45,8 +46,8 @@ public class SoulsCamera : MonoBehaviour
         x = angles.y;
         y = angles.x;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        //Cursor.lockState = CursorLockMode.Locked;
+        //Cursor.visible = false;
 
         if (target)
         {
