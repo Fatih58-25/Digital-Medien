@@ -1249,6 +1249,11 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.019999998, y: 0.019999996, z: 0.000350243}
   m_Center: {x: 0.000000007450581, y: -9.656229e-19, z: -0.00013590677}
+--- !u!1 &417506861 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9195389838973442054, guid: f51f3441e33fc43b9bc97d244f2addf8, type: 3}
+  m_PrefabInstance: {fileID: 1555598860}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &422140918
 GameObject:
   m_ObjectHideFlags: 0
@@ -3879,6 +3884,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuManager
   menuCanvas: {fileID: 1715132210}
+  firstSelectedButton: {fileID: 417506861}
 --- !u!1 &1798622583 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5735547809931331928, guid: 45c40bd6b62ffc4408e9eddcaf07f2c6, type: 3}

@@ -1,9 +1,13 @@
 using UnityEngine;
+using UnityEngine.EventSystems; // <-- Klavye seçimi için bu gerekli!
 
 public class MainMenuManager : MonoBehaviour
 {
     [Header("UI Canvas")]
-    [SerializeField] private GameObject menuCanvas; // Menü UI paneliniz/Canvas'ınız
+    [SerializeField] private GameObject menuCanvas; // Menü Canvas'ınız
+
+    [Header("Keyboard / Gamepad Settings")]
+    [SerializeField] private GameObject firstSelectedButton; // İlk seçili olacak buton (Örn: Play Button)
 
     private void Start()
     {
@@ -14,14 +18,19 @@ public class MainMenuManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // 3. Oyuncu menüdeyken arkada oyun akmasın (düşmanlar hareket etmesin)
+        // 3. Klavye / Gamepad için ilk butonu seçili yap
+        if (firstSelectedButton != null && EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+            EventSystem.current.SetSelectedGameObject(firstSelectedButton);
+        }
+
+        // 4. Oyuncu menüdeyken arkada oyun akmasın
         Time.timeScale = 0f; 
     }
 
     public void PlayGame()
     {
-        
-
         // 1. Menü panelini gizle
         if (menuCanvas != null) menuCanvas.SetActive(false);
 

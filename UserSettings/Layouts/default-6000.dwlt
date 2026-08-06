@@ -119,7 +119,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 100}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 119
+  controlID: 132
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -145,7 +145,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 100}
   m_MaxSize: {x: 16192, y: 16192}
   vertical: 1
-  controlID: 57
+  controlID: 58
   draggingID: 0
 --- !u!114 &7
 MonoBehaviour:
@@ -171,7 +171,7 @@ MonoBehaviour:
   m_MinSize: {x: 200, y: 50}
   m_MaxSize: {x: 16192, y: 8096}
   vertical: 0
-  controlID: 58
+  controlID: 59
   draggingID: 0
 --- !u!114 &8
 MonoBehaviour:
@@ -445,7 +445,7 @@ MonoBehaviour:
     m_OverlaysVisible: 1
   m_LockTracker:
     m_IsLocked: 0
-  m_LastSelectedObjectID: -3348
+  m_LastSelectedObjectID: 54926
 --- !u!114 &15
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -586,9 +586,9 @@ MonoBehaviour:
   m_SceneHierarchy:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
-      m_SelectedIDs: c8f2ffff
-      m_LastClickedID: -3384
-      m_ExpandedIDs: c8f2ffffecf2fffff0f2ffff20f5ffff26faffff2afaffff6cfaffff
+      m_SelectedIDs: 8ed60000
+      m_LastClickedID: 54926
+      m_ExpandedIDs: cae8fffffaeaffff10fbffff8ed60000
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1206,9 +1206,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 50.218273, y: 69.07754, z: 476.60046}
+    m_Target: {x: 2.2891243, y: 42.59554, z: 448.4563}
     speed: 2
-    m_Value: {x: 50.218273, y: 69.07754, z: 476.60046}
+    m_Value: {x: 2.2891243, y: 42.59554, z: 448.4563}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1254,9 +1254,9 @@ MonoBehaviour:
     m_GridAxis: 1
     m_gridOpacity: 0.5
   m_Rotation:
-    m_Target: {x: 0.14423372, y: 0.6121554, z: -0.11472773, w: 0.76900244}
+    m_Target: {x: 0.03546408, y: -0.94899905, z: 0.2912176, w: 0.1157691}
     speed: 2
-    m_Value: {x: 0.14422905, y: 0.6121356, z: -0.114724025, w: 0.7689776}
+    m_Value: {x: 0.03546289, y: -0.9489673, z: 0.29120785, w: 0.11576523}
   m_Size:
     m_Target: 2.1590555
     speed: 2
@@ -1341,7 +1341,7 @@ MonoBehaviour:
     m_SkipHidden: 1
     m_SearchArea: 1
     m_Folders:
-    - Assets/vida/UI/Scripts
+    - Assets/Scripts
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1351,16 +1351,16 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 96
   m_LastFolders:
-  - Assets/vida/UI/Scripts
+  - Assets/Scripts
   m_LastFoldersGridSize: 96
   m_LastProjectPath: /home/fatih/Projects/Digital-Medien
   m_LockTracker:
     m_IsLocked: 0
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 660}
-    m_SelectedIDs: b6430100
-    m_LastClickedID: 82870
-    m_ExpandedIDs: 000000008a0801008c0801008e0801009008010092080100940801009608010098080100c2090100b843010000ca9a3b
+    scrollPos: {x: 0, y: 399}
+    m_SelectedIDs: 00070100
+    m_LastClickedID: 67328
+    m_ExpandedIDs: 00000000f8050100fa050100fc050100fe05010000060100020601000406010006060100220701002807010000ca9a3b
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1389,7 +1389,7 @@ MonoBehaviour:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs: 
     m_LastClickedID: 0
-    m_ExpandedIDs: 000000008a0801008c0801008e0801009008010092080100940801009608010098080100
+    m_ExpandedIDs: 00000000f8050100fa050100fc050100fe05010000060100020601000406010006060100
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1526,7 +1526,7 @@ MonoBehaviour:
     m_ControlHash: -371814159
     m_PrefName: Preview_InspectorPreview
   m_LastInspectedObjectInstanceID: -1
-  m_LastVerticalScrollValue: 438
+  m_LastVerticalScrollValue: 0
   m_GlobalObjectId: 
   m_InspectorMode: 0
   m_LockTracker:
