@@ -1,44 +1,43 @@
 using UnityEngine;
-using UnityEngine.EventSystems; // <-- Klavye seçimi için bu gerekli!
+using UnityEngine.EventSystems;
 
 public class MainMenuManager : MonoBehaviour
 {
     [Header("UI Canvas")]
-    [SerializeField] private GameObject menuCanvas; // Menü Canvas'ınız
+    [SerializeField] private GameObject menuCanvas;
 
     [Header("Keyboard / Gamepad Settings")]
-    [SerializeField] private GameObject firstSelectedButton; // İlk seçili olacak buton (Örn: Play Button)
+    [SerializeField] private GameObject firstSelectedButton;
+
+    [Header("Settings Panel")]
+    [SerializeField] private GameObject mainMenuButtons;
+    [SerializeField] private GameObject settingsPanel;
 
     private void Start()
     {
-        // 1. Oyun başladığında menü açık olsun
         if (menuCanvas != null) menuCanvas.SetActive(true);
+        if (mainMenuButtons != null) mainMenuButtons.SetActive(true);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
 
-        // 2. Fare serbest ve görünür olsun
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // 3. Klavye / Gamepad için ilk butonu seçili yap
         if (firstSelectedButton != null && EventSystem.current != null)
         {
             EventSystem.current.SetSelectedGameObject(null);
             EventSystem.current.SetSelectedGameObject(firstSelectedButton);
         }
 
-        // 4. Oyuncu menüdeyken arkada oyun akmasın
-        Time.timeScale = 0f; 
+        Time.timeScale = 0f;
     }
 
     public void PlayGame()
     {
-        // 1. Menü panelini gizle
         if (menuCanvas != null) menuCanvas.SetActive(false);
 
-        // 2. FAREYİ KİLİTLE (Artık oyuna girdik, fare kaybolsun)
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
-        // 3. Zamanı tekrar başlat
         Time.timeScale = 1f;
     }
 
@@ -46,5 +45,19 @@ public class MainMenuManager : MonoBehaviour
     {
         Debug.Log("Quit Game...");
         Application.Quit();
+    }
+
+    public void OpenSettings()
+    {
+        Debug.Log("OpenSettings wurde aufgerufen!");
+        if (mainMenuButtons != null) mainMenuButtons.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(true);
+    }
+
+    public void CloseSettings()
+    {
+        Debug.Log("CloseSettings wurde aufgerufen!");
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (mainMenuButtons != null) mainMenuButtons.SetActive(true);
     }
 }
