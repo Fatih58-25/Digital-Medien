@@ -9,13 +9,13 @@ AnimatorOverrideController:
   m_Name: asylum
   m_Controller: {fileID: 9100000, guid: 69f441827b87becc7babeef6eb97d7d8, type: 2}
   m_Clips:
-  - m_OriginalClip: {fileID: -203655887218126122, guid: 16c140692658b16acaf0159e63f7cb64, type: 3}
-    m_OverrideClip: {fileID: 2544452400594629442, guid: 08d13d1fd655ff9e08ff0249419b4cec, type: 3}
-  - m_OriginalClip: {fileID: -203655887218126122, guid: 465cc09b76c9cc4569b2b569fd7dcf94, type: 3}
-    m_OverrideClip: {fileID: 6897200404726596030, guid: 08d13d1fd655ff9e08ff0249419b4cec, type: 3}
   - m_OriginalClip: {fileID: 7400000, guid: 7464974a1646b2236b291f52b7df7263, type: 2}
     m_OverrideClip: {fileID: 4194841064624500797, guid: 08d13d1fd655ff9e08ff0249419b4cec, type: 3}
   - m_OriginalClip: {fileID: 7400000, guid: 1ab04a56fc7e6c0bf95f9a64bbbff432, type: 2}
     m_OverrideClip: {fileID: 6144777086643063771, guid: 08d13d1fd655ff9e08ff0249419b4cec, type: 3}
-  - m_OriginalClip: {fileID: -203655887218126122, guid: 9435d734d3841ac1183bcdc07bcef250, type: 3}
-    m_OverrideClip: {fileID: 6897200404726596030, guid: 08d13d1fd655ff9e08ff0249419b4cec, type: 3}
+  - m_OriginalClip: {fileID: 7400000, guid: de2050ea327f1d8f39a7b5f43ad471b5, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 76130e51356102998944c9fb27251a1e, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: eb3edc63a07e2795c92f5e33c9d4776d, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 710518ace0d98e0059663b11c2bdbaf6, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 74c0b8c2afc155b2b86e132eebce05cd, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 710518ace0d98e0059663b11c2bdbaf6, type: 2}
