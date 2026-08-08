@@ -149,17 +149,53 @@ public class CrucibleCombatNode : Node
     }
 
     private IEnumerator ExecuteSpecificAttackRoutine(int attackType)
+{
+    isAttacking = true;
+
+    if (IsAgentValid()) bb.agent.isStopped = true;
+
+    RotateInstantlyToPlayer();
+
+    // 1. Animasyonu Başlat
+    bb.animator.ResetTrigger("Attack");
+    bb.animator.SetInteger("AttackTyp", attackType);
+    bb.animator.SetTrigger("Attack");
+
+    yield return new WaitForSeconds(0.05f);
+
+    // 2. Eğer Mesafe Kapatma Saldırısıysa (Typ 5) Kodla İleri Kaydır
+    if (attackType == 5)
     {
-        isAttacking = true;
+        float dashDuration = 0.5f; // Kaç saniye boyunca öne atılacağı
+        float dashSpeed = 12.0f;   // Atılma hızı (İstediğin gibi ayarlayabilirsin)
+        float timer = 0f;
 
-        if (IsAgentValid()) bb.agent.isStopped = true;
+        Vector3 dashDirection = (bb.player.position - bb.transform.position).normalized;
+        dashDirection.y = 0; // Yüksekliğe kaymayı engelle
 
-        RotateInstantlyToPlayer();
+        while (timer < dashDuration)
+        {
+            // Oyuncunun dibine çok girerse durması için mesafe kontrolü
+            float dist = Vector3.Distance(bb.transform.position, bb.player.position);
+            if (dist < 1.8f) break; 
 
-        yield return mono.StartCoroutine(PlayAttackAnimation(attackType));
+            // CharacterController veya Transform ile öne kaydır
+            bb.transform.position += dashDirection * dashSpeed * Time.deltaTime;
 
-        FinishAttackAndForceMove();
+            timer += Time.deltaTime;
+            yield return null;
+        }
     }
+
+    // Animasyonun bitmesini bekle
+    yield return new WaitUntil(() => 
+    {
+        AnimatorStateInfo state = bb.animator.GetCurrentAnimatorStateInfo(0);
+        return !bb.animator.IsInTransition(0) && state.normalizedTime >= 0.95f;
+    });
+
+    FinishAttackAndForceMove();
+}
 
     private IEnumerator PlayAttackAnimation(int type)
     {
