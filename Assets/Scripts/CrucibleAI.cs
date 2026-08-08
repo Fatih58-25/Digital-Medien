@@ -70,162 +70,156 @@ public class CrucibleCombatNode : Node
             return NodeState.RUNNING;
         }
 
-        // --- 1. SALDIRI MOTORU ---
+        // --- SALDIRI MOTORU ---
         if (bb.globalCooldownTimer <= 0)
         {
-            // Sadece dibindeyse (3.2 metreden az)
-            if (realDistance <= 3.2f)
+            if (realDistance <= 4.2f)
             {
                 mono.StartCoroutine(ExecuteSmartAttackRoutine(realDistance));
                 return NodeState.RUNNING;
             }
-            // 3.2m - 6.0m arası: %30 Saplama (Typ 5)
-            else if (realDistance <= 6.0f)
+            else if (realDistance <= 7.0f && Random.value < 0.15f)
             {
-                if (Random.value < 0.30f)
-                {
-                    mono.StartCoroutine(ExecuteSpecificAttackRoutine(5));
-                    return NodeState.RUNNING;
-                }
+                mono.StartCoroutine(ExecuteDashAttackOnly());
+                return NodeState.RUNNING;
             }
         }
 
-        // --- 2. HAREKET MOTORU ---
-        if (realDistance > 12.0f)
-        {
-            ExecuteChargeMovement();
-        }
-        else if (realDistance > 6.0f)
-        {
-            ExecuteStalkMovement();
-        }
-        else
-        {
-            ExecuteTacticalMovement(realDistance);
-        }
+        // --- HAREKET MOTORU ---
+        if (realDistance > 12.0f) ExecuteChargeMovement();
+        else if (realDistance > 6.0f) ExecuteStalkMovement();
+        else ExecuteTacticalMovement(realDistance);
 
         return NodeState.RUNNING;
     }
 
-    #region SALDIRI DİZİLİMLERİ VE ZORLA YÜRÜTME
+    #region EŞİTLENMİŞ VE HIZLANDIRILMIŞ SALDIRI ORANLARI
 
     private IEnumerator ExecuteSmartAttackRoutine(float currentDist)
     {
         isAttacking = true;
-
         if (IsAgentValid()) bb.agent.isStopped = true;
 
         RotateInstantlyToPlayer();
 
         float dice = Random.value;
 
-        if (dice < 0.40f)
-        {
-            yield return mono.StartCoroutine(PlayAttackAnimation(1));
+// %50 İhtimal: Type 2 -> Type 3
+if (dice < 0.50f)
+{
+    yield return mono.StartCoroutine(PlayComboSequence(2, 3));
+}
+// %5 İhtimal: Type 2 -> Type 5 (Çok nadir)
+else if (dice < 0.55f)
+{
+    yield return mono.StartCoroutine(PlayComboSequence(2, 5));
+}
+// %45 İhtimal: Sadece Tekli Type 2
+else
+{
+    yield return mono.StartCoroutine(PlaySingleAttack(2));
+}
 
-            float newDist = Vector3.Distance(bb.transform.position, bb.player.position);
-            if (newDist <= 3.5f && Random.value < 0.50f)
-            {
-                RotateInstantlyToPlayer();
-                int followUp = Random.value > 0.4f ? 2 : 3;
-                yield return mono.StartCoroutine(PlayAttackAnimation(followUp));
-            }
-        }
-        else if (dice < 0.70f)
-        {
-            yield return mono.StartCoroutine(PlayAttackAnimation(2));
-        }
-        else if (dice < 0.88f)
-        {
-            yield return mono.StartCoroutine(PlayAttackAnimation(3));
-        }
-        else
-        {
-            yield return mono.StartCoroutine(PlayAttackAnimation(4));
-        }
-
-        // --- SALDIRI BİTTİ: DONUP KALMASINI ENGELLEMEK İÇİN AJANI VE ANİMATÖRÜ UYANDIR ---
         FinishAttackAndForceMove();
     }
 
-    private IEnumerator ExecuteSpecificAttackRoutine(int attackType)
-{
-    isAttacking = true;
-
-    if (IsAgentValid()) bb.agent.isStopped = true;
-
-    RotateInstantlyToPlayer();
-
-    // 1. Animasyonu Başlat
-    bb.animator.ResetTrigger("Attack");
-    bb.animator.SetInteger("AttackTyp", attackType);
-    bb.animator.SetTrigger("Attack");
-
-    yield return new WaitForSeconds(0.05f);
-
-    // 2. Eğer Mesafe Kapatma Saldırısıysa (Typ 5) Kodla İleri Kaydır
-    if (attackType == 5)
+    private IEnumerator PlayComboSequence(int firstType, int secondType)
     {
-        float dashDuration = 0.5f; // Kaç saniye boyunca öne atılacağı
-        float dashSpeed = 12.0f;   // Atılma hızı (İstediğin gibi ayarlayabilirsin)
-        float timer = 0f;
+        // --- 1. VURUŞ ---
+        TriggerAnim(firstType);
 
-        Vector3 dashDirection = (bb.player.position - bb.transform.position).normalized;
-        dashDirection.y = 0; // Yüksekliğe kaymayı engelle
+        yield return new WaitForSeconds(0.10f); 
 
-        while (timer < dashDuration)
+        // Type 2'nin ilk darbesinden hemen sonra (%40) ikinci vuruşa geç
+        float waitWindow = (firstType == 2) ? 0.60f : 0.45f;
+        yield return mono.StartCoroutine(WaitForAnimHitWindow(waitWindow));
+
+        // --- 2. VURUŞ ÖNCESİ DÖN VE ADIM AT ---
+        RotateInstantlyToPlayer();
+
+        if (secondType == 5)
         {
-            // Oyuncunun dibine çok girerse durması için mesafe kontrolü
-            float dist = Vector3.Distance(bb.transform.position, bb.player.position);
-            if (dist < 1.8f) break; 
+            yield return mono.StartCoroutine(ExecuteDashLogic());
+        }
+        else
+        {
+            // Type 3 öncesi oyuncuya doğru küçük bir ivme ver (Iskalamasın diye)
+            Vector3 stepDir = (bb.player.position - bb.transform.position).normalized;
+            stepDir.y = 0;
+            bb.transform.position += stepDir * 0.8f;
 
-            // CharacterController veya Transform ile öne kaydır
-            bb.transform.position += dashDirection * dashSpeed * Time.deltaTime;
-
-            timer += Time.deltaTime;
-            yield return null;
+            TriggerAnim(secondType);
+            yield return new WaitForSeconds(0.10f);
+            yield return mono.StartCoroutine(WaitForAnimHitWindow(0.70f));
         }
     }
 
-    // Animasyonun bitmesini bekle
-    yield return new WaitUntil(() => 
+    private IEnumerator PlaySingleAttack(int type)
     {
-        AnimatorStateInfo state = bb.animator.GetCurrentAnimatorStateInfo(0);
-        return !bb.animator.IsInTransition(0) && state.normalizedTime >= 0.95f;
-    });
+        TriggerAnim(type);
+        yield return new WaitForSeconds(0.15f);
+        float waitWindow = (type == 2) ? 0.80f : 0.70f;
+        yield return mono.StartCoroutine(WaitForAnimHitWindow(waitWindow));
+    }
 
-    FinishAttackAndForceMove();
-}
-
-    private IEnumerator PlayAttackAnimation(int type)
+    private IEnumerator ExecuteDashAttackOnly()
     {
-        bb.animator.ResetTrigger("Attack"); // Birikmiş trigger'ları temizle
+        isAttacking = true;
+        if (IsAgentValid()) bb.agent.isStopped = true;
+        RotateInstantlyToPlayer();
+
+        yield return mono.StartCoroutine(ExecuteDashLogic());
+
+        FinishAttackAndForceMove();
+    }
+
+    private IEnumerator ExecuteDashLogic()
+    {
+        TriggerAnim(5);
+        yield return new WaitForSeconds(0.05f);
+
+        float dashDuration = 0.35f;
+        float dashSpeed = 16.0f;
+        float timer = 0f;
+        Vector3 dashDir = (bb.player.position - bb.transform.position).normalized;
+        dashDir.y = 0;
+
+        while (timer < dashDuration)
+        {
+            if (Vector3.Distance(bb.transform.position, bb.player.position) < 1.8f) break;
+            bb.transform.position += dashDir * dashSpeed * Time.deltaTime;
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return mono.StartCoroutine(WaitForAnimHitWindow(0.70f));
+    }
+
+    private void TriggerAnim(int type)
+    {
+        bb.animator.ResetTrigger("Attack");
         bb.animator.SetInteger("AttackTyp", type);
         bb.animator.SetTrigger("Attack");
+    }
 
-        yield return new WaitForSeconds(0.1f);
-
+    private IEnumerator WaitForAnimHitWindow(float targetNormalizedTime)
+    {
         yield return new WaitUntil(() => 
         {
             AnimatorStateInfo state = bb.animator.GetCurrentAnimatorStateInfo(0);
-            return !bb.animator.IsInTransition(0) && state.normalizedTime >= 0.95f;
+            return !bb.animator.IsInTransition(0) && state.normalizedTime >= targetNormalizedTime;
         });
     }
 
-    // Saldırı biter bitmez ajanı serbest bırakan ve yürüten özel metod
     private void FinishAttackAndForceMove()
     {
-        bb.globalCooldownTimer = Random.Range(bb.minComboCooldown, bb.maxComboCooldown);
+        bb.globalCooldownTimer = Random.Range(0.2f, 0.6f);
         
-        // Agent'ı kesinlikle aç
         if (IsAgentValid()) bb.agent.isStopped = false;
-
-        // Animatördeki donmayı kır: Doğrudan yürüme parametresi ver
         bb.animator.SetFloat("Speed", 1.0f);
 
-        // Modu belirle
-        currentMode = Random.value < 0.70f ? CrucibleMode.Strafe : CrucibleMode.Backstep;
-        modeTimer = Random.Range(1.5f, 2.5f);
+        currentMode = Random.value < 0.60f ? CrucibleMode.Strafe : CrucibleMode.Backstep;
+        modeTimer = Random.Range(0.5f, 1.2f);
         
         isAttacking = false;
     }
@@ -252,12 +246,11 @@ public class CrucibleCombatNode : Node
         if (modeTimer <= 0)
         {
             float dice = Random.value;
-
-            if (dice < 0.65f) currentMode = CrucibleMode.Strafe;   
+            if (dice < 0.60f) currentMode = CrucibleMode.Strafe;   
             else if (dice < 0.85f) currentMode = CrucibleMode.Backstep; 
             else currentMode = CrucibleMode.Stalk;                
 
-            modeTimer = Random.Range(1.5f, 3.0f);
+            modeTimer = Random.Range(0.8f, 1.5f);
             strafeDirection = Random.value > 0.5f ? 1 : -1;
         }
 
@@ -290,10 +283,7 @@ public class CrucibleCombatNode : Node
     {
         Vector3 lookDir = (bb.player.position - bb.transform.position).normalized;
         lookDir.y = 0;
-        if (lookDir != Vector3.zero)
-        {
-            bb.transform.rotation = Quaternion.LookRotation(lookDir);
-        }
+        if (lookDir != Vector3.zero) bb.transform.rotation = Quaternion.LookRotation(lookDir);
     }
 
     private void HandleTimers()
@@ -317,7 +307,6 @@ public class CrucibleCombatNode : Node
     private void SetAgentDestination(Vector3 target, float speed)
     {
         if (!IsAgentValid()) return;
-
         bb.agent.isStopped = false;
         bb.agent.speed = speed;
 
