@@ -1,4 +1,5 @@
 using UnityEngine;
+using System; // Action için gerekli
 
 public class PlayerHealth : MonoBehaviour, IDamageable
 {
@@ -8,6 +9,9 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     private Animator animator;
     private bool isDead = false;
 
+    // UI için Event
+    public event Action<float, float> OnHealthChanged;
+
     private void Awake()
     {
         currentHealth = maxHealth;
@@ -15,7 +19,11 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         animator = GetComponentInChildren<Animator>();
     }
 
-    // Düşman hasar verdiğinde bunu kullanacak: TakeDamage(damage, attackerTransform)
+    private void Start()
+    {
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
+
     public void TakeDamage(int damage, Transform attacker = null)
     {
         if (isDead) return;
@@ -33,7 +41,6 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         {
             if (combatSystem != null)
             {
-                // Düşmanın yönünü hesapla ve geri tepmeyi tetikle
                 Vector3 hitDir = (attacker != null) ? (transform.position - attacker.position).normalized : Vector3.back;
                 combatSystem.ApplyStagger(0.5f, hitDir, 3f);
             }
@@ -41,10 +48,14 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         }
 
         currentHealth -= finalDamage;
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        // UI Güncellemesini tetikle
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+
         if (currentHealth <= 0) Die();
     }
 
-    // IDamageable arayüzü için standart overload
     public void TakeDamage(int damage) => TakeDamage(damage, null);
 
     private void Die()
@@ -52,4 +63,16 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         isDead = true;
         animator?.SetTrigger("Die");
     }
+
+    // PlayerHealth.cs içine eklenecek metot:
+public void Heal(int amount)
+{
+    if (isDead) return;
+
+    currentHealth += amount;
+    currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+    // UI'a haber ver
+    OnHealthChanged?.Invoke(currentHealth, maxHealth);
+}
 }

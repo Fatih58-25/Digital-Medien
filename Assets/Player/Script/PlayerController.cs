@@ -3,6 +3,10 @@ using UnityEngine;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+    [Header("Stamina Settings")]
+    [SerializeField] private float jumpStaminaCost = 10f;             // Zıplama stamina maliyeti
+    [SerializeField] private float sprintStaminaCostPerSec = 12f;     // Saniyede harcanan koşma staminası
+
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
     public float rotationSpeed = 10f;
@@ -10,25 +14,25 @@ public class PlayerController : MonoBehaviour
     public float jumpHeight = 2.0f; // Exakte Sprunghöhe in Metern
 
     [Header("Animation Reference")]
-    [SerializeField] private PlayerAnimator playerAnimator; // Jetzt im Inspector sichtbar!
+    [SerializeField] private PlayerAnimator playerAnimator;
 
     private CharacterController controller;
     private Transform cameraTransform;
     private Vector3 moveDirection;
     private float verticalVelocity;
 
-    // Combat Sistem Referansı (Saldırı durumunu kontrol etmek için)
+    // Referanslar
     private PlayerCombatSystem combatSystem;
+    private PlayerStamina playerStamina; // Stamina referansı
 
-    // Wird vom Combat-System abgefragt
     public bool IsDucking { get; private set; } = false;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        combatSystem = GetComponent<PlayerCombatSystem>(); // Combat sistemi otomatik bulur
+        combatSystem = GetComponent<PlayerCombatSystem>();
+        playerStamina = GetComponent<PlayerStamina>(); // Component'i alıyoruz
 
-        // Falls im Inspector nicht zugewiesen, automatisch suchen
         if (playerAnimator == null)
         {
             playerAnimator = GetComponent<PlayerAnimator>();
@@ -60,11 +64,24 @@ public class PlayerController : MonoBehaviour
         float currentSpeed = 0f;
         float actualMoveSpeed = moveSpeed;
 
-        // Shift'e basılı tutma süresi 0.2 saniyeyi geçtiyse koşmaya başlar
-        bool isSprinting = Input.GetKey(KeyCode.LeftShift) && 
-                           (Time.time - combatSystem.shiftPressTime) > 0.2f && 
-                           inputDir.magnitude >= 0.1f &&
-                           !isAttacking; // Saldırı anında koşamasın
+        // Shift'e basılı tutma kontrolü
+        bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && 
+                             (Time.time - combatSystem.shiftPressTime) > 0.2f && 
+                             inputDir.magnitude >= 0.1f &&
+                             !isAttacking;
+
+        // Koşmak istiyor ve YETERLİ STAMİNA var mı?
+        bool isSprinting = false;
+        if (wantsToSprint)
+        {
+            float sprintCostThisFrame = sprintStaminaCostPerSec * Time.deltaTime;
+
+            if (playerStamina != null && playerStamina.HasEnoughStamina(sprintCostThisFrame))
+            {
+                playerStamina.UseStamina(sprintCostThisFrame); // Zamana bağlı stamina düşüşü
+                isSprinting = true;
+            }
+        }
 
         // Kamera Yönlerini Hesapla
         Vector3 camForward = cameraTransform.forward;
@@ -78,7 +95,7 @@ public class PlayerController : MonoBehaviour
         // ⚔️ SALDIRI ANINDAKİ HAREKET KONTROLÜ
         if (isAttacking)
         {
-            if (vertical > 0.1f) // Sadece ileri
+            if (vertical > 0.1f)
             {
                 moveDirection = camForward * vertical;
                 actualMoveSpeed = moveSpeed * 0.8f;
@@ -90,18 +107,17 @@ public class PlayerController : MonoBehaviour
                 currentSpeed = 0f;
             }
         }
-        // 🏃 NORMAL HAREKET (Saldırı yokken)
+        // 🏃 NORMAL HAREKET
         else if (inputDir.magnitude >= 0.1f)
         {
             moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
 
-            // Karakter basılan yöne pürüzsüz döner
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
             if (isSprinting)
             {
-                actualMoveSpeed = moveSpeed * 1.5f; // Koşma hızı
+                actualMoveSpeed = moveSpeed * 1.5f;
                 currentSpeed = 2f;
             }
             else
@@ -121,9 +137,15 @@ public class PlayerController : MonoBehaviour
         if (controller.isGrounded)
         {
             verticalVelocity = -2f;
+            
+            // Zıplama Girdisi & Stamina Kontrolü
             if (!isAttacking && Input.GetButtonDown("Jump"))
             {
-                verticalVelocity = Mathf.Sqrt(jumpHeight * 5f * gravity);
+                if (playerStamina != null && playerStamina.HasEnoughStamina(jumpStaminaCost))
+                {
+                    playerStamina.UseStamina(jumpStaminaCost); // Zıplama staminası düşer
+                    verticalVelocity = Mathf.Sqrt(jumpHeight * 5f * gravity);
+                }
             }
         }
         else

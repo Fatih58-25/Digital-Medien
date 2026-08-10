@@ -3,6 +3,10 @@ using System.Collections;
 
 public class PlayerCombatSystem : MonoBehaviour
 {
+    [Header("Stamina Ayarları")]
+    [SerializeField] private float attackStaminaCost = 20f; // Her saldırının harcadığı stamina
+    [SerializeField] private float rollStaminaCost = 15f;   // Yuvarlanmanın harcadığı stamina
+
     [Header("Angriff")]
     [SerializeField] private float attackCooldown = 0.4f;
     [SerializeField] private float attackAnimationDuration = 1.0f;
@@ -28,6 +32,7 @@ public class PlayerCombatSystem : MonoBehaviour
     private PlayerAnimator playerAnimator;
     private PlayerController playerController;
     private CharacterController charController;
+    private PlayerStamina playerStamina; // STAMINA SİSTEMİ REFERANSI
 
     private float lastAttackTime;
     private float lastRollTime;
@@ -42,11 +47,15 @@ public class PlayerCombatSystem : MonoBehaviour
     private bool isAttacking = false;
     private bool isStaggered = false;
 
+    public float shiftPressTime = 0f;
+    private bool isShiftPressed = false;
+
     private void Start()
     {
         playerAnimator = GetComponent<PlayerAnimator>();
         playerController = GetComponent<PlayerController>();
         charController = GetComponent<CharacterController>();
+        playerStamina = GetComponent<PlayerStamina>(); // STAMINA SİSTEMİNİ ALIYORUZ
     }
 
     private void Update()
@@ -67,7 +76,11 @@ public class PlayerCombatSystem : MonoBehaviour
         {
             if (Time.time - lastAttackTime >= attackCooldown)
             {
-                PerformAttack();
+                // STAMINA KONTROLÜ: Yeterli stamina varsa harca ve saldırı yap
+                if (playerStamina != null && playerStamina.HasEnoughStamina(attackStaminaCost))
+                {
+                    PerformAttack();
+                }
             }
         }
     }
@@ -82,32 +95,30 @@ public class PlayerCombatSystem : MonoBehaviour
         if (Input.GetMouseButton(1) && !isBlocking) StartBlocking();
     }
 
-    public float shiftPressTime = 0f;
-    private bool isShiftPressed = false;
-
     private void HandleRollInput()
     {
-        // Shift'e basıldığı an
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
             shiftPressTime = Time.time;
             isShiftPressed = true;
         }
 
-        // Shift bırakıldığı an
         if (Input.GetKeyUp(KeyCode.LeftShift) && isShiftPressed)
         {
             isShiftPressed = false;
             float pressDuration = Time.time - shiftPressTime;
 
-            // Eğer çok kısa süre basıldıysa YUVARLAN
             if (pressDuration < 0.2f && !isRolling && !isAttacking && !playerController.IsDucking)
             {
                 if (Time.time - lastRollTime >= rollCooldown)
                 {
-                    if (isBlocking) StopBlocking();
-                    ResetCombo();
-                    PerformRoll();
+                    // STAMINA KONTROLÜ: Yeterli stamina varsa harca ve yuvarlan
+                    if (playerStamina != null && playerStamina.HasEnoughStamina(rollStaminaCost))
+                    {
+                        if (isBlocking) StopBlocking();
+                        ResetCombo();
+                        PerformRoll();
+                    }
                 }
             }
         }
@@ -115,6 +126,9 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void PerformAttack()
     {
+        // Stamina Düşürme
+        playerStamina?.UseStamina(attackStaminaCost);
+
         isAttacking = true;
         lastAttackTime = Time.time;
         queuedComboIndex = (currentAttackCombo >= maxComboCount) ? 1 : currentAttackCombo + 1;
@@ -125,6 +139,9 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void PerformRoll()
     {
+        // Stamina Düşürme
+        playerStamina?.UseStamina(rollStaminaCost);
+
         lastRollTime = Time.time;
         isRolling = true;
         isInvincible = true;
@@ -154,16 +171,13 @@ public class PlayerCombatSystem : MonoBehaviour
         Invoke(nameof(ResetStagger), duration);
     }
 
-   private IEnumerator ApplyKnockbackEffect(Vector3 dir, float force)
+    private IEnumerator ApplyKnockbackEffect(Vector3 dir, float force)
     {
-        // Force 15'ten 3'e düştü (daha yumuşak)
-        // Timer 0.15'ten 0.08'e düştü (sadece o anlık sarsılma)
         float timer = 0.08f; 
         dir.y = 0;
         
         while (timer > 0 && charController != null)
         {
-            // force değerini dışarıdan 3-5 gibi bir değerle çağırınca çok daha tok duracak
             charController.Move(dir * force * Time.deltaTime);
             timer -= Time.deltaTime;
             yield return null;
