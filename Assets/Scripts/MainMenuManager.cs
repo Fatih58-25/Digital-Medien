@@ -11,11 +11,13 @@ public class MainMenuManager : MonoBehaviour
 
     [Header("Settings Panel")]
     [SerializeField] private GameObject mainMenuButtons;
+    [SerializeField] private GameObject hudCanvas;
     [SerializeField] private GameObject settingsPanel;
 
     private void Start()
     {
         if (menuCanvas != null) menuCanvas.SetActive(true);
+        if (hudCanvas != null) hudCanvas.SetActive(false);
         if (mainMenuButtons != null) mainMenuButtons.SetActive(true);
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
@@ -34,6 +36,7 @@ public class MainMenuManager : MonoBehaviour
     public void PlayGame()
     {
         if (menuCanvas != null) menuCanvas.SetActive(false);
+        if (hudCanvas != null) hudCanvas.SetActive(true);
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;

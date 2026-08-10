@@ -32,7 +32,8 @@ public class PlayerCombatSystem : MonoBehaviour
     private PlayerAnimator playerAnimator;
     private PlayerController playerController;
     private CharacterController charController;
-    private PlayerStamina playerStamina; // STAMINA SİSTEMİ REFERANSI
+    private PlayerStamina playerStamina;
+    private PlayerFlaskSystem playerFlaskSystem; // İKSİR SİSTEMİ REFERANSI
 
     private float lastAttackTime;
     private float lastRollTime;
@@ -55,7 +56,8 @@ public class PlayerCombatSystem : MonoBehaviour
         playerAnimator = GetComponent<PlayerAnimator>();
         playerController = GetComponent<PlayerController>();
         charController = GetComponent<CharacterController>();
-        playerStamina = GetComponent<PlayerStamina>(); // STAMINA SİSTEMİNİ ALIYORUZ
+        playerStamina = GetComponent<PlayerStamina>();
+        playerFlaskSystem = GetComponent<PlayerFlaskSystem>(); // REFERANS ALINDI
     }
 
     private void Update()
@@ -72,11 +74,12 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void HandleAttackInput()
     {
-        if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !isAttacking && !playerController.IsDucking)
+        bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
+
+        if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !isAttacking && !isDrinking && !playerController.IsDucking)
         {
             if (Time.time - lastAttackTime >= attackCooldown)
             {
-                // STAMINA KONTROLÜ: Yeterli stamina varsa harca ve saldırı yap
                 if (playerStamina != null && playerStamina.HasEnoughStamina(attackStaminaCost))
                 {
                     PerformAttack();
@@ -87,7 +90,9 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void HandleBlockInput()
     {
-        if (!Input.GetMouseButton(1) || isRolling || isAttacking || playerController.IsDucking)
+        bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
+
+        if (!Input.GetMouseButton(1) || isRolling || isAttacking || isDrinking || playerController.IsDucking)
         {
             if (isBlocking) StopBlocking();
             return;
@@ -97,6 +102,8 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void HandleRollInput()
     {
+        bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
+
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
             shiftPressTime = Time.time;
@@ -108,11 +115,10 @@ public class PlayerCombatSystem : MonoBehaviour
             isShiftPressed = false;
             float pressDuration = Time.time - shiftPressTime;
 
-            if (pressDuration < 0.2f && !isRolling && !isAttacking && !playerController.IsDucking)
+            if (pressDuration < 0.2f && !isRolling && !isAttacking && !isDrinking && !playerController.IsDucking)
             {
                 if (Time.time - lastRollTime >= rollCooldown)
                 {
-                    // STAMINA KONTROLÜ: Yeterli stamina varsa harca ve yuvarlan
                     if (playerStamina != null && playerStamina.HasEnoughStamina(rollStaminaCost))
                     {
                         if (isBlocking) StopBlocking();
@@ -126,7 +132,6 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void PerformAttack()
     {
-        // Stamina Düşürme
         playerStamina?.UseStamina(attackStaminaCost);
 
         isAttacking = true;
@@ -139,7 +144,6 @@ public class PlayerCombatSystem : MonoBehaviour
 
     private void PerformRoll()
     {
-        // Stamina Düşürme
         playerStamina?.UseStamina(rollStaminaCost);
 
         lastRollTime = Time.time;
@@ -156,6 +160,9 @@ public class PlayerCombatSystem : MonoBehaviour
     public void ApplyStagger(float duration, Vector3 knockbackDir, float force)
     {
         if (isInvincible) return;
+
+        // Darbe yendiğinde iksir içmeyi iptal et
+        playerFlaskSystem?.InterruptDrink();
 
         isAttacking = false;
         isRolling = false;

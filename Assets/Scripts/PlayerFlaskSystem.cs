@@ -13,7 +13,7 @@ public class PlayerFlaskSystem : MonoBehaviour
     [Header("Timings (Animasyona Göre Ayarla)")]
     [SerializeField] private float showFlaskDelay = 0.15f; // Şişe elinde kaçıncı saniyede gözüksün?
     [SerializeField] private float healDelay = 0.6f;       // Şişeyi kafaya dikip canın dolduğu an (saniye)
-    [SerializeField] private float hideFlaskDelay = 4.2f;  // Şişenin elinden kaybolduğu an (saniye)
+    [SerializeField] private float hideFlaskDelay = 1.8f;  // Şişenin elinden kaybolduğu an (saniye)
 
     [Header("Visuals & Props")]
     [SerializeField] private GameObject flaskProp;
@@ -93,6 +93,17 @@ public class PlayerFlaskSystem : MonoBehaviour
         yield return new WaitForSeconds(hideFlaskDelay - healDelay);
         if (flaskProp != null) flaskProp.SetActive(false);
         isDrinking = false;
+    }
+
+    // Darbe yendiğinde veya işlem kesildiğinde çağrılır
+    public void InterruptDrink()
+    {
+        if (isDrinking)
+        {
+            StopAllCoroutines();
+            if (flaskProp != null) flaskProp.SetActive(false);
+            isDrinking = false;
+        }
     }
 
     public void NotifyUI()

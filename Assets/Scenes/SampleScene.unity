@@ -4592,7 +4592,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &451563506
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13574,7 +13574,7 @@ MonoBehaviour:
   maxComboCount: 3
   parryReduction: 0.7
   rollCooldown: 1
-  rollDuration: 0.6
+  rollDuration: 0.8
   iframeDuration: 0.35
   rollKey: 120
   shiftPressTime: 0
@@ -13694,6 +13694,8 @@ MonoBehaviour:
   maxStamina: 100
   staminaRegenRate: 15
   regenDelay: 1.2
+  boostDelay: 1
+  boostedRegenMultiplier: 2.5
 --- !u!114 &1369592800
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14667,6 +14669,10 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7785773103076864701, guid: f51f3441e33fc43b9bc97d244f2addf8, type: 3}
+      propertyPath: hudCanvas
+      value: 
+      objectReference: {fileID: 451563505}
     - target: {fileID: 7863467001525495331, guid: f51f3441e33fc43b9bc97d244f2addf8, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -18975,7 +18981,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: rollDuration
-      value: 0.7
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: swordPosition
@@ -18987,7 +18993,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: iframeDuration
-      value: 0.6
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: enemyLayer.m_Bits

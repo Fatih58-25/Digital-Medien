@@ -11,7 +11,7 @@ public class PlayerController : MonoBehaviour
     public float moveSpeed = 5f;
     public float rotationSpeed = 10f;
     public float gravity = 9.81f;
-    public float jumpHeight = 2.0f; // Exakte Sprunghöhe in Metern
+    public float jumpHeight = 2.0f;
 
     [Header("Animation Reference")]
     [SerializeField] private PlayerAnimator playerAnimator;
@@ -23,7 +23,8 @@ public class PlayerController : MonoBehaviour
 
     // Referanslar
     private PlayerCombatSystem combatSystem;
-    private PlayerStamina playerStamina; // Stamina referansı
+    private PlayerStamina playerStamina;
+    private PlayerFlaskSystem playerFlaskSystem; // İKSİR REFERANSI
 
     public bool IsDucking { get; private set; } = false;
 
@@ -31,7 +32,8 @@ public class PlayerController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         combatSystem = GetComponent<PlayerCombatSystem>();
-        playerStamina = GetComponent<PlayerStamina>(); // Component'i alıyoruz
+        playerStamina = GetComponent<PlayerStamina>();
+        playerFlaskSystem = GetComponent<PlayerFlaskSystem>(); // REFERANS ALINDI
 
         if (playerAnimator == null)
         {
@@ -56,6 +58,7 @@ public class PlayerController : MonoBehaviour
     void MovePlayer()
     {
         bool isAttacking = combatSystem != null && combatSystem.IsAttacking;
+        bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking; // İKSİR KONTROLÜ
 
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
@@ -64,11 +67,18 @@ public class PlayerController : MonoBehaviour
         float currentSpeed = 0f;
         float actualMoveSpeed = moveSpeed;
 
-        // Shift'e basılı tutma kontrolü
+        // İksir içerken hızı %25'e düşür ve koşmayı engelle
+        if (isDrinking)
+        {
+            actualMoveSpeed = moveSpeed * 0.25f;
+        }
+
+        // Shift'e basılı tutma kontrolü (İksir içerken de koşamaz)
         bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && 
                              (Time.time - combatSystem.shiftPressTime) > 0.2f && 
                              inputDir.magnitude >= 0.1f &&
-                             !isAttacking;
+                             !isAttacking &&
+                             !isDrinking;
 
         // Koşmak istiyor ve YETERLİ STAMİNA var mı?
         bool isSprinting = false;
@@ -78,7 +88,7 @@ public class PlayerController : MonoBehaviour
 
             if (playerStamina != null && playerStamina.HasEnoughStamina(sprintCostThisFrame))
             {
-                playerStamina.UseStamina(sprintCostThisFrame); // Zamana bağlı stamina düşüşü
+                playerStamina.UseStamina(sprintCostThisFrame);
                 isSprinting = true;
             }
         }
@@ -107,7 +117,7 @@ public class PlayerController : MonoBehaviour
                 currentSpeed = 0f;
             }
         }
-        // 🏃 NORMAL HAREKET
+        // 🏃 NORMAL VE İKSİR ANINDAKİ HAREKET
         else if (inputDir.magnitude >= 0.1f)
         {
             moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
@@ -138,12 +148,12 @@ public class PlayerController : MonoBehaviour
         {
             verticalVelocity = -2f;
             
-            // Zıplama Girdisi & Stamina Kontrolü
-            if (!isAttacking && Input.GetButtonDown("Jump"))
+            // Zıplama Girdisi, Stamina & İksir Kontrolü
+            if (!isAttacking && !isDrinking && Input.GetButtonDown("Jump"))
             {
                 if (playerStamina != null && playerStamina.HasEnoughStamina(jumpStaminaCost))
                 {
-                    playerStamina.UseStamina(jumpStaminaCost); // Zıplama staminası düşer
+                    playerStamina.UseStamina(jumpStaminaCost);
                     verticalVelocity = Mathf.Sqrt(jumpHeight * 5f * gravity);
                 }
             }
