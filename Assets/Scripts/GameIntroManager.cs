@@ -33,7 +33,7 @@ public class GameIntroManager : MonoBehaviour, IArticyFlowPlayerCallbacks
 
     private ArticyFlowPlayer flowPlayer;
     private readonly List<Branch> currentBranches = new List<Branch>();
-    private bool introRunning = true;
+    private bool introRunning = false;
     private bool waitingForInput = false;
 
     void Awake()
@@ -43,6 +43,23 @@ public class GameIntroManager : MonoBehaviour, IArticyFlowPlayerCallbacks
 
     void Start()
     {
+        // Blackscreen bleibt beim Laden der Szene unsichtbar, damit das Hauptmenue normal zu sehen ist.
+        // Das eigentliche Intro startet erst, wenn StartIntro() aufgerufen wird (siehe Play-Button).
+        if (blackScreen != null)
+        {
+            blackScreen.alpha = 0f;
+            blackScreen.blocksRaycasts = false;
+            blackScreen.gameObject.SetActive(false);
+        }
+    }
+
+    // Im Play-Button: Button-Component -> On Click () -> "+" -> dieses GameIntroManager-Objekt reinziehen
+    // -> Funktion GameIntroManager -> StartIntro() auswaehlen.
+    public void StartIntro()
+    {
+        if (introRunning) return;
+        introRunning = true;
+
         SetPlayerControlEnabled(false);
 
         blackScreen.alpha = 1f;
@@ -50,7 +67,9 @@ public class GameIntroManager : MonoBehaviour, IArticyFlowPlayerCallbacks
         blackScreen.gameObject.SetActive(true);
 
         flowPlayer.StartOn = narrationStart.GetObject();
+        Debug.Log($"[GameIntroManager] StartIntro: StartOn = {flowPlayer.StartOn}");
         flowPlayer.Play();
+        Debug.Log("[GameIntroManager] StartIntro: Play() aufgerufen und zurueckgekehrt");
     }
 
     void Update()
@@ -75,6 +94,8 @@ public class GameIntroManager : MonoBehaviour, IArticyFlowPlayerCallbacks
     // Wird vom ArticyFlowPlayer aufgerufen, sobald er auf einem Dialog-Fragment pausiert.
     public void OnFlowPlayerPaused(IFlowObject aObject)
     {
+        Debug.Log($"[GameIntroManager] OnFlowPlayerPaused: {(aObject == null ? "NULL (Dead End)" : aObject.ToString())}");
+
         if (aObject == null)
         {
             // Dead End erreicht -> Erzaehlung ist zu Ende
@@ -88,6 +109,8 @@ public class GameIntroManager : MonoBehaviour, IArticyFlowPlayerCallbacks
             narrationText.text = objWithText.Text;
         else
             narrationText.text = string.Empty;
+
+        Debug.Log($"[GameIntroManager] narrationText.text jetzt: \"{narrationText.text}\"");
     }
 
     // Wird direkt nach OnFlowPlayerPaused aufgerufen und liefert die moeglichen Folgeknoten.
@@ -96,6 +119,8 @@ public class GameIntroManager : MonoBehaviour, IArticyFlowPlayerCallbacks
         currentBranches.Clear();
         foreach (var branch in aBranches)
             if (branch.IsValid) currentBranches.Add(branch);
+
+        Debug.Log($"[GameIntroManager] OnBranchesUpdated: {aBranches.Count} total, {currentBranches.Count} gueltig. waitingForInput = true");
 
         // Die Kette ist rein linear -> maximal 1 gueltiger Branch. Wir warten auf E, statt automatisch
         // weiterzuspielen, damit der Spieler das Erzaehltempo selbst bestimmt.
