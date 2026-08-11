@@ -31,12 +31,18 @@ public class DemonBossCombatNode : Node
     private SkeletonBlackboard bb;
     private MonoBehaviour mono;
     
-    // Karesel Mesafeler (Silahı uzun olduğu için menzili biraz geniş tutabilirsin)
-    private readonly float attackRangeSqr = 16.0f;    // 4.0f ^ 2 (Uzun silah menzili)
-    private readonly float deaggroRangeSqr = 625.0f;  // 25.0f ^ 2
+    // ⚔️ MENZİL VE SÜRELER
+    private readonly float attackRange = 3.5f;        
+    private readonly float deaggroRangeSqr = 625.0f;  
 
     private float navmeshRepathTimer = 0f;
     private bool isAttacking = false;
+    private bool hasShownHUD = false;
+
+    // Taktiksel Hareket Değişkenleri
+    private float strafeTimer = 0f;
+    private int strafeDirection = 1;
+    private bool isStrafing = false;
 
     public DemonBossCombatNode(SkeletonBlackboard b, MonoBehaviour m) 
     { 
@@ -48,88 +54,150 @@ public class DemonBossCombatNode : Node
     {
         if (bb.player == null) return NodeState.FAILURE;
         
-        Vector3 offset = bb.player.position - bb.transform.position;
-        float distSqr = offset.sqrMagnitude;
+        float distanceToPlayer = Vector3.Distance(bb.transform.position, bb.player.position);
 
-        if (distSqr > deaggroRangeSqr) 
+        if (distanceToPlayer * distanceToPlayer > deaggroRangeSqr) 
         {
             ResetBossState();
             return NodeState.FAILURE; 
         }
 
-        HandleTimers();
-
-        // Saldırı anında Boss dönmesin, oyuncu arkasına geçebilsin
-        if (!isAttacking)
+        // --- BOSS HP BARINI EKRANA GETİR ---
+        if (!hasShownHUD)
         {
-            RotateTowardsPlayer();
+            EnemyBase enemyBase = bb.transform.GetComponentInChildren<EnemyBase>();
+            if (enemyBase != null && enemyBase.IsBoss)
+            {
+                BossHUDManager.Instance?.ShowBossHealthBar(enemyBase);
+                hasShownHUD = true;
+            }
         }
+
+        HandleTimers();
 
         if (isAttacking)
         {
             return NodeState.RUNNING;
         }
 
-        // --- TEKLİ SALDIRI MOTORU ---
-        if (distSqr <= attackRangeSqr && bb.globalCooldownTimer <= 0)
+        // --- SALDIRI VEYA YAKLAŞMA MANTIĞI ---
+        if (distanceToPlayer <= attackRange && bb.globalCooldownTimer <= 0)
         {
             mono.StartCoroutine(ExecuteSingleAttackRoutine());
             return NodeState.RUNNING;
         }
-        else if (!isAttacking)
+        else
         {
-            ExecuteApproach(distSqr);
+            ExecuteMovementLogic(distanceToPlayer);
         }
 
         return NodeState.RUNNING;
     }
 
-    #region TEKLİ SALDIRI MANTIĞI
+    #region SALDIRI VE KİLİTLİ DÖNÜŞ MANTIĞI
 
     private IEnumerator ExecuteSingleAttackRoutine()
     {
         isAttacking = true;
 
-        if (IsAgentValid()) bb.agent.isStopped = true;
+        if (IsAgentValid()) 
+        {
+            bb.agent.isStopped = true;
+            bb.agent.velocity = Vector3.zero;
+        }
+
         bb.animator.SetFloat("Speed", 0f);
-        bb.animator.speed = 1.0f;
 
-        // Vurmadan önce oyuncuya doğru ağır bir şekilde dön
-        RotateInstantlyToPlayer();
+        // 🟢 1. ANINDA ERKEN DÖNÜŞ: Vurmaya karar verdiği o İLK SALİSENE tam olarak oyuncunun yüzüne kilitlenir.
+        SnapDirectlyToPlayer();
 
-        // 1, 2 veya 3 nolu saldırı animasyonundan birini rastgele seç
+        // 1, 2 veya 3 nolu saldırı animasyonunu seç ve başlat
         int attackType = Random.Range(1, 4); 
-
         bb.animator.SetInteger("AttackTyp", attackType);
         bb.animator.SetTrigger("Attack");
 
-        // --- OTOMATİK ANİMASYON BİTİŞ KONTROLÜ ---
-        // 1. Animatörün saldırı durumuna geçmesi için 1-2 kare fırsat ver
-        yield return new WaitForSeconds(0.1f);
+        // 🟢 2. DÖNÜŞÜ BİR DAHA ASLA TETİKLEME: Animasyon bitene kadar hiçbir şekilde dönüş kodu çalışmaz!
+        float maxWaitTime = 1.6f;
+        float elapsed = 0f;
 
-        // 2. Hangi animasyon olursa olsun, %95'i tamamlanana kadar bekle
-        yield return new WaitUntil(() => 
+        while (elapsed < maxWaitTime)
         {
             AnimatorStateInfo state = bb.animator.GetCurrentAnimatorStateInfo(0);
-            return !bb.animator.IsInTransition(0) && state.normalizedTime >= 0.95f;
-        });
+            if (!bb.animator.IsInTransition(0) && state.normalizedTime >= 0.88f)
+            {
+                break;
+            }
 
-        // Vuruş bitti! DS1 Demon tarzı ağır Boss olduğu için vuruş sonrası biraz dinlensin
-        // Blackboard'daki Cooldown süresine göre bir sonraki hamle için bekler
-        bb.globalCooldownTimer = Random.Range(bb.minComboCooldown + 1.0f, bb.maxComboCooldown + 2.0f);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // 🟢 3. BEKLEME (COOLDOWN) SÜRESİ: Saldırı bitti!
+        bb.globalCooldownTimer = Random.Range(3.5f, 4.4f);
         
+        // Saldırı sonrası hareket kararı
+        isStrafing = Random.value < 0.50f; 
+        strafeTimer = Random.Range(1.0f, 1.5f);
+        strafeDirection = Random.value > 0.5f ? 1 : -1;
+
         isAttacking = false;
+        
+        if (IsAgentValid()) bb.agent.isStopped = false;
     }
 
-    private void RotateInstantlyToPlayer()
+    // Boss'u salisesinde direkt olarak oyuncuya döndüren tam açı kilidi
+    private void SnapDirectlyToPlayer()
     {
+        if (bb.player == null) return;
+
         Vector3 lookDir = (bb.player.position - bb.transform.position).normalized;
         lookDir.y = 0;
+
         if (lookDir != Vector3.zero)
         {
-            bb.transform.rotation = Quaternion.LookRotation(lookDir);
+            Quaternion targetRotation = Quaternion.LookRotation(lookDir);
+            bb.transform.rotation = targetRotation; // Slerp/Lerp yok, anında kilitlenir!
+            
+            if (IsAgentValid())
+            {
+                bb.agent.transform.rotation = targetRotation;
+            }
         }
     }
+
+    #endregion
+
+    #region HAREKET VE YAKLAŞMA MANTIĞI
+
+    private void ExecuteMovementLogic(float distanceToPlayer)
+    {
+        strafeTimer -= Time.deltaTime;
+
+        // 🟢 KRİTİK DEĞİŞİKLİK: Yalnızca Cooldown BİTTİYSE ve yürüyorsa yavaşça dönmesine izin ver
+        // Saldırı sonrası dinlenirken/beklerken ASLA dönmez!
+        if (bb.globalCooldownTimer <= 0)
+        {
+            RotateTowardsPlayer(3.5f);
+        }
+
+        if (isStrafing && strafeTimer > 0 && distanceToPlayer <= attackRange + 2.0f)
+        {
+            Vector3 right = Vector3.Cross(Vector3.up, (bb.player.position - bb.transform.position).normalized);
+            Vector3 strafeTarget = bb.transform.position + right * strafeDirection * 2.0f;
+            
+            SetAgentDestination(strafeTarget, bb.walkSpeed * 0.85f);
+            bb.animator.SetFloat("Speed", 1.0f);
+        }
+        else
+        {
+            SetAgentDestination(bb.player.position, bb.walkSpeed);
+            bb.animator.SetFloat("Speed", 1.0f);
+        }
+    }
+
+    #endregion
+
+    #region YARDIMCI METODLAR
 
     private void HandleTimers()
     {
@@ -138,23 +206,22 @@ public class DemonBossCombatNode : Node
         if (navmeshRepathTimer > 0) navmeshRepathTimer -= Time.deltaTime;
     }
 
-    private void RotateTowardsPlayer()
+    private void RotateTowardsPlayer(float speed)
     {
+        if (bb.player == null) return;
+
         Vector3 lookDir = (bb.player.position - bb.transform.position).normalized;
         lookDir.y = 0; 
         if (lookDir != Vector3.zero) 
         {
             Quaternion targetRotation = Quaternion.LookRotation(lookDir);
-            bb.transform.rotation = Quaternion.Slerp(bb.transform.rotation, targetRotation, Time.deltaTime * 3f); // Dönüşü biraz yavaşlattık (Ağır hissi)
+            bb.transform.rotation = Quaternion.Slerp(bb.transform.rotation, targetRotation, Time.deltaTime * speed);
+            
+            if (IsAgentValid())
+            {
+                bb.agent.transform.rotation = bb.transform.rotation;
+            }
         }
-    }
-
-    private void ExecuteApproach(float distSqr)
-    {
-        // Ağır demon boss'lar genelde sadece yürür
-        float moveSpeed = bb.walkSpeed;
-        SetAgentDestination(bb.player.position, moveSpeed);
-        bb.animator.SetFloat("Speed", 1.0f); // Yürüyüş animasyonu
     }
 
     private void SetAgentDestination(Vector3 target, float speed)
@@ -167,7 +234,7 @@ public class DemonBossCombatNode : Node
         if (navmeshRepathTimer <= 0f)
         {
             bb.agent.SetDestination(target);
-            navmeshRepathTimer = 0.2f; 
+            navmeshRepathTimer = 0.15f; 
         }
     }
 
@@ -175,6 +242,12 @@ public class DemonBossCombatNode : Node
 
     private void ResetBossState()
     {
+        if (hasShownHUD)
+        {
+            BossHUDManager.Instance?.HideBossHealthBar();
+            hasShownHUD = false;
+        }
+
         bb.animator.speed = 1.0f;
         isAttacking = false;
         bb.hasTarget = false;

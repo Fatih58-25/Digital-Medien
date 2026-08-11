@@ -1,7 +1,12 @@
 using UnityEngine;
+using System;
 
 public class EnemyBase : MonoBehaviour, IDamageable
 {
+    [Header("Boss Settings")]
+    [SerializeField] private bool isBoss = false;              // Tik atılırsa Boss olur!
+    [SerializeField] private string bossName = "Ancient Dragon"; // Ekranın altında yazacak isim
+
     [Header("Health")]
     [SerializeField] private int maxHealth = 50;
     [SerializeField] private float knockbackForce = 5f;
@@ -11,14 +16,14 @@ public class EnemyBase : MonoBehaviour, IDamageable
     [SerializeField] private float flashDuration = 0.1f;
 
     [Header("Death Settings")]
-    [SerializeField] private string deathTriggerName = "Die"; // Name des Triggers im Animator des NPCs
-    [SerializeField] private float timeBeforeDestroy = 3.0f;  // Wie lange er tot am Boden liegt
+    [SerializeField] private string deathTriggerName = "Die"; 
+    [SerializeField] private float timeBeforeDestroy = 3.0f;  
 
     [Header("Angriff (NPC gegen Spieler)")]
-    [SerializeField] private Transform attackPoint;           // Ein leeres GameObject in der Hand des NPCs
-    [SerializeField] private float attackRange = 1.5f;        // Angriffsreichweite des NPCs
-    [SerializeField] private int attackDamage = 15;           // Schaden, den der NPC dem Spieler zufügt
-    [SerializeField] private LayerMask playerLayer;           // Der Layer deines Spielers (z.B. "Player")
+    [SerializeField] private Transform attackPoint;           
+    [SerializeField] private float attackRange = 1.5f;        
+    [SerializeField] private int attackDamage = 15;           
+    [SerializeField] private LayerMask playerLayer;           
 
     [Header("Setup")]
     [SerializeField] private Renderer myRenderer;
@@ -30,11 +35,15 @@ public class EnemyBase : MonoBehaviour, IDamageable
     private bool isDead = false;
     private Coroutine flashRoutine;
 
+    // UI Haberleşmesi için Eventler
+    public event Action<int, int> OnHealthChanged;
+    public event Action OnDied;
+
     private void Awake()
     {
         currentHealth = maxHealth;
         rb = GetComponent<Rigidbody>();
-        animator = GetComponentInChildren<Animator>(); // Holt sich den Animator des Gegners
+        animator = GetComponentInChildren<Animator>();
 
         if (myRenderer == null)
         {
@@ -47,13 +56,15 @@ public class EnemyBase : MonoBehaviour, IDamageable
         }
     }
 
-    // --- SCHADEN EMPFANGEN (Vom Spieler getroffen werden) ---
     public void TakeDamage(int damage)
     {
         if (isDead) return;
 
         currentHealth -= damage;
         Debug.Log($"{gameObject.name} nimmt {damage} Schaden! Verbleibende Health: {currentHealth}");
+
+        // UI Güncelleme Eventi Tetikle
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
         if (flashRoutine != null)
         {
@@ -71,34 +82,27 @@ public class EnemyBase : MonoBehaviour, IDamageable
     {
         if (isDead) return;
 
-        direction.y = 0f; // Verhindert, dass der Gegner in die Luft fliegt
+        direction.y = 0f; 
 
-        // 1. Prüfen, ob eine KI aktiv ist und diese kurz stoppen
         UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
         if (agent != null && agent.enabled)
         {
-            // Stoppt die KI-Bewegung und schaltet den Agenten kurz ab
             agent.velocity = Vector3.zero;
             agent.enabled = false;
-
-            // Startet eine verzögerte Funktion, die den Agenten nach 0.2 Sekunden wieder anschaltet
             StartCoroutine(ReenableNavMesh(agent, 0.2f));
         }
 
-        // 2. Den physikalischen Impuls flüssig ausführen
         if (rb != null)
         {
-            rb.linearVelocity = Vector3.zero; // Nulle alte Kräfte für einen sauberen Impuls
+            rb.linearVelocity = Vector3.zero; 
             rb.AddForce(direction.normalized * knockbackForce, ForceMode.Impulse);
         }
         else
         {
-            // Falls kein Rigidbody da ist, nutzen wir eine sanfte Bewegung per Coroutine statt Teleportation
             StartCoroutine(SmoothMoveFallback(direction.normalized * knockbackForce * 0.2f));
         }
     }
 
-    // Hilfsfunktion: Schaltet die KI nach dem Rückstoß automatisch wieder ein
     private System.Collections.IEnumerator ReenableNavMesh(UnityEngine.AI.NavMeshAgent agent, float delay)
     {
         yield return new WaitForSeconds(delay);
@@ -108,7 +112,6 @@ public class EnemyBase : MonoBehaviour, IDamageable
         }
     }
 
-    // Hilfsfunktion: Schiebt den Gegner sanft zurück, falls absolut kein Rigidbody genutzt werden kann
     private System.Collections.IEnumerator SmoothMoveFallback(Vector3 offset)
     {
         float duration = 0.15f;
@@ -130,27 +133,26 @@ public class EnemyBase : MonoBehaviour, IDamageable
         isDead = true;
         Debug.Log($"{gameObject.name} ist besiegt!");
 
-        // 1. Todesanimation abspielen
+        // Ölüm event'ini tetikle (Boss HUD kapanacak)
+        OnDied?.Invoke();
+
         if (animator != null)
         {
             animator.SetTrigger(deathTriggerName);
         }
 
-        // 2. Collider ausschalten (damit der Spieler nicht an der Leiche hängenbleibt)
         Collider enemyCollider = GetComponent<Collider>();
         if (enemyCollider != null)
         {
             enemyCollider.enabled = false;
         }
 
-        // 3. Rigidbody stoppen und Physik deaktivieren
         if (rb != null)
         {
             rb.linearVelocity = Vector3.zero;
             rb.isKinematic = true;
         }
 
-        // 4. Objekt nach der eingestellten Zeit zerstören
         Destroy(gameObject, timeBeforeDestroy);
     }
 
@@ -163,19 +165,14 @@ public class EnemyBase : MonoBehaviour, IDamageable
         myRenderer.material.color = originalColor;
     }
 
-
-    // --- SCHADEN AUSTEILEN (Den Spieler angreifen) ---
-    // DIESE FUNKTION PER ANIMATION EVENT IN DER NPC-ANGRIFFSANIMATION AUFRUFEN
     public void OnEnemyAttackHit()
     {
         if (isDead || attackPoint == null) return;
 
-        // Erstellt eine Kugel an der Angriffs-Position des NPCs und checkt, ob der Spieler getroffen wurde
         Collider[] hits = Physics.OverlapSphere(attackPoint.position, attackRange, playerLayer);
 
         foreach (Collider hit in hits)
         {
-            // Sucht nach der Schadens-Komponente auf dem Spieler
             IDamageable damageable = hit.GetComponentInParent<IDamageable>();
             if (damageable != null)
             {
@@ -186,7 +183,6 @@ public class EnemyBase : MonoBehaviour, IDamageable
 
     private void OnDrawGizmosSelected()
     {
-        // Zeichnet eine rote Kugel im Editor für die Angriffsreichweite des NPCs
         if (attackPoint != null)
         {
             Gizmos.color = Color.red;
@@ -194,12 +190,11 @@ public class EnemyBase : MonoBehaviour, IDamageable
         }
     }
 
-    // Sicherheitsnetz: Tut beim NPC nichts, verhindert aber Fehlermeldungen!
-    public void OnAttackHit()
-    {
-        // Bleibt leer
-    }
-    // Properties für eventuelle UI-Anzeigen (z.B. Lebensbalken)
+    public void OnAttackHit() { }
+
+    // GETTER PROPERTIES
+    public bool IsBoss => isBoss;
+    public string BossName => bossName;
     public int GetCurrentHealth => currentHealth;
     public int GetMaxHealth => maxHealth;
     public float GetHealthPercentage => (float)currentHealth / maxHealth;

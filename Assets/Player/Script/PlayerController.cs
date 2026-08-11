@@ -4,8 +4,8 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [Header("Stamina Settings")]
-    [SerializeField] private float jumpStaminaCost = 10f;             // Zıplama stamina maliyeti
-    [SerializeField] private float sprintStaminaCostPerSec = 12f;     // Saniyede harcanan koşma staminası
+    [SerializeField] private float jumpStaminaCost = 10f;             
+    [SerializeField] private float sprintStaminaCostPerSec = 12f;     
 
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
@@ -18,13 +18,14 @@ public class PlayerController : MonoBehaviour
 
     private CharacterController controller;
     private Transform cameraTransform;
+    private SoulsCamera soulsCamera; 
     private Vector3 moveDirection;
     private float verticalVelocity;
 
     // Referanslar
     private PlayerCombatSystem combatSystem;
     private PlayerStamina playerStamina;
-    private PlayerFlaskSystem playerFlaskSystem; // İKSİR REFERANSI
+    private PlayerFlaskSystem playerFlaskSystem;
 
     public bool IsDucking { get; private set; } = false;
 
@@ -33,7 +34,7 @@ public class PlayerController : MonoBehaviour
         controller = GetComponent<CharacterController>();
         combatSystem = GetComponent<PlayerCombatSystem>();
         playerStamina = GetComponent<PlayerStamina>();
-        playerFlaskSystem = GetComponent<PlayerFlaskSystem>(); // REFERANS ALINDI
+        playerFlaskSystem = GetComponent<PlayerFlaskSystem>();
 
         if (playerAnimator == null)
         {
@@ -47,6 +48,7 @@ public class PlayerController : MonoBehaviour
         if (Camera.main != null)
         {
             cameraTransform = Camera.main.transform;
+            soulsCamera = Camera.main.GetComponent<SoulsCamera>(); 
         }
     }
 
@@ -58,7 +60,13 @@ public class PlayerController : MonoBehaviour
     void MovePlayer()
     {
         bool isAttacking = combatSystem != null && combatSystem.IsAttacking;
-        bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking; // İKSİR KONTROLÜ
+        bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
+        bool isExhausted = playerStamina != null && playerStamina.IsExhausted;
+        bool isRolling = combatSystem != null && combatSystem.IsRolling;
+
+        // Kamera kilitlenme durumunu ve hedefini kontrol et
+        bool isLockedOn = soulsCamera != null && soulsCamera.IsLockedOn && soulsCamera.LockedTarget != null;
+        Transform lockedTarget = isLockedOn ? soulsCamera.LockedTarget : null;
 
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
@@ -67,28 +75,27 @@ public class PlayerController : MonoBehaviour
         float currentSpeed = 0f;
         float actualMoveSpeed = moveSpeed;
 
-        // İksir içerken hızı %25'e düşür ve koşmayı engelle
+        // İksir içerken hızı %25'e düşür
         if (isDrinking)
         {
             actualMoveSpeed = moveSpeed * 0.25f;
         }
 
-        // Shift'e basılı tutma kontrolü (İksir içerken de koşamaz)
+        // Shift'e basılı tutma kontrolü
         bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && 
-                             (Time.time - combatSystem.shiftPressTime) > 0.2f && 
+                             (combatSystem == null || (Time.time - combatSystem.shiftPressTime) > 0.2f) && 
                              inputDir.magnitude >= 0.1f &&
                              !isAttacking &&
-                             !isDrinking;
+                             !isDrinking &&
+                             !isExhausted;
 
-        // Koşmak istiyor ve YETERLİ STAMİNA var mı?
+        // Koşma Mantığı
         bool isSprinting = false;
-        if (wantsToSprint)
+        if (wantsToSprint && playerStamina != null)
         {
             float sprintCostThisFrame = sprintStaminaCostPerSec * Time.deltaTime;
-
-            if (playerStamina != null && playerStamina.HasEnoughStamina(sprintCostThisFrame))
+            if (playerStamina.UseStamina(sprintCostThisFrame))
             {
-                playerStamina.UseStamina(sprintCostThisFrame);
                 isSprinting = true;
             }
         }
@@ -102,12 +109,27 @@ public class PlayerController : MonoBehaviour
         camRight.y = 0;
         camRight.Normalize();
 
-        // ⚔️ SALDIRI ANINDAKİ HAREKET KONTROLÜ
+        // ⚔️ 1. SALDIRI ANINDAKİ ROTASYON VE HAREKET
         if (isAttacking)
         {
+            // 🟢 YALNIZCA SALDIRIRKEN düşmana kilitliysek yüzümüzü anında/pürüzsüzce düşmana dönüyoruz
+            if (isLockedOn)
+            {
+                Vector3 dirToEnemy = lockedTarget.position - transform.position;
+                dirToEnemy.y = 0;
+                if (dirToEnemy != Vector3.zero)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(dirToEnemy);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * 2.5f * Time.deltaTime);
+                }
+            }
+
             if (vertical > 0.1f)
             {
-                moveDirection = camForward * vertical;
+                // İleri basılıyorsa kilitli hedefe (veya kameraya) doğru hafifçe adımla
+                Vector3 stepDir = isLockedOn ? (lockedTarget.position - transform.position).normalized : camForward;
+                stepDir.y = 0;
+                moveDirection = stepDir * vertical;
                 actualMoveSpeed = moveSpeed * 0.8f;
                 currentSpeed = 1f;
             }
@@ -117,11 +139,13 @@ public class PlayerController : MonoBehaviour
                 currentSpeed = 0f;
             }
         }
-        // 🏃 NORMAL VE İKSİR ANINDAKİ HAREKET
+        // 🏃 2. NORMAL HAREKET & YUVARLANMA ANINDAKİ ROTASYON
         else if (inputDir.magnitude >= 0.1f)
         {
+            // Hareket yönümüzü kameranın baktığı açıya göre hesapla
             moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
 
+            // 🟢 Kilitli olsak bile yuvarlanırken, yürürken veya koşarken serbestçe Bastığımız Yöne dönüyoruz
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
@@ -148,13 +172,14 @@ public class PlayerController : MonoBehaviour
         {
             verticalVelocity = -2f;
             
-            // Zıplama Girdisi, Stamina & İksir Kontrolü
             if (!isAttacking && !isDrinking && Input.GetButtonDown("Jump"))
             {
-                if (playerStamina != null && playerStamina.HasEnoughStamina(jumpStaminaCost))
+                if (playerStamina != null && !playerStamina.IsExhausted)
                 {
-                    playerStamina.UseStamina(jumpStaminaCost);
-                    verticalVelocity = Mathf.Sqrt(jumpHeight * 5f * gravity);
+                    if (playerStamina.UseStamina(jumpStaminaCost))
+                    {
+                        verticalVelocity = Mathf.Sqrt(jumpHeight * 5f * gravity);
+                    }
                 }
             }
         }

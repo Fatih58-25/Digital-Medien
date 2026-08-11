@@ -12,7 +12,7 @@ public class PlayerFlaskSystem : MonoBehaviour
 
     [Header("Timings (Animasyona Göre Ayarla)")]
     [SerializeField] private float showFlaskDelay = 0.15f; // Şişe elinde kaçıncı saniyede gözüksün?
-    [SerializeField] private float healDelay = 0.6f;       // Şişeyi kafaya dikip canın dolduğu an (saniye)
+    [SerializeField] private float healDelay = 0.6f;       // İlk içişte canın dolduğu an (saniye)
     [SerializeField] private float hideFlaskDelay = 1.8f;  // Şişenin elinden kaybolduğu an (saniye)
 
     [Header("Visuals & Props")]
@@ -21,6 +21,9 @@ public class PlayerFlaskSystem : MonoBehaviour
     private int currentFlasks;
     private float lastDrinkTime;
     private bool isDrinking = false;
+
+    // Ard arda basışlarda animasyon süresini uzatmak için zamanlayıcı
+    private float drinkEndTime;
 
     private PlayerHealth playerHealth;
     private PlayerCombatSystem combatSystem;
@@ -43,8 +46,6 @@ public class PlayerFlaskSystem : MonoBehaviour
     private void Start()
     {
         if (flaskProp != null) flaskProp.SetActive(false);
-        
-        // Başlangıç değerini UI'a gönder
         NotifyUI();
     }
 
@@ -59,40 +60,70 @@ public class PlayerFlaskSystem : MonoBehaviour
     public void TryDrinkFlask()
     {
         if (currentFlasks <= 0) return;
-        if (isDrinking) return;
+
+        // 🟢 İKİNCİ VE ÜÇÜNCÜ BASTIĞINDA: Zaten içiyorsa ANINDA canı doldur!
+        if (isDrinking)
+        {
+            InstantlyDrinkNextFlask();
+            return;
+        }
+
         if (Time.time - lastDrinkTime < drinkCooldown) return;
         if (combatSystem != null && (combatSystem.IsAttacking || combatSystem.IsRolling || combatSystem.IsStaggered)) return;
 
         StartCoroutine(DrinkRoutine());
     }
 
+    // İlk R basışında çalışan normal animasyonlu coroutine
     private IEnumerator DrinkRoutine()
     {
         isDrinking = true;
         lastDrinkTime = Time.time;
         currentFlasks--;
 
-        // UI'ı anında güncelle
         NotifyUI();
 
-        // Animasyonu Tetikle
         if (animator != null) animator.SetTrigger("DrinkFlask");
 
         // 1. Şişeyi Elde Göster
         yield return new WaitForSeconds(showFlaskDelay);
         if (flaskProp != null) flaskProp.SetActive(true);
 
-        // 2. Canı Doldur
+        // 2. İlk Canı Doldur
         yield return new WaitForSeconds(healDelay - showFlaskDelay);
         if (playerHealth != null)
         {
             playerHealth.Heal(healAmount);
         }
 
-        // 3. Şişeyi Gizle ve İçmeyi Bitir
-        yield return new WaitForSeconds(hideFlaskDelay - healDelay);
+        // Bitiş süresini belirle (Üst üste basılırsa bu süre uzayacak)
+        drinkEndTime = Time.time + (hideFlaskDelay - healDelay);
+
+        // Şişenin elde kalma süresi bitene kadar bekle
+        while (Time.time < drinkEndTime)
+        {
+            yield return null;
+        }
+
+        // 3. Şişeyi Gizle ve Bitir
         if (flaskProp != null) flaskProp.SetActive(false);
         isDrinking = false;
+    }
+
+    // 🟢 2. veya 3. kez R'ye basıldığında ANINDA tetiklenen metod
+    private void InstantlyDrinkNextFlask()
+    {
+        currentFlasks--;
+        NotifyUI();
+
+        // BEKLEMEDEN ANINDA CANI BASTIK
+        if (playerHealth != null)
+        {
+            playerHealth.Heal(healAmount);
+        }
+
+        // Karakter iksiri hemen elinden bırakmasın diye içme süresini 0.5 saniye daha uzatıyoruz
+        drinkEndTime = Time.time + 0.5f;
     }
 
     // Darbe yendiğinde veya işlem kesildiğinde çağrılır

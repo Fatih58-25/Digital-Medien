@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-
 public class SoulsCamera : MonoBehaviour
 {
     [Header("References")]
@@ -40,14 +39,15 @@ public class SoulsCamera : MonoBehaviour
     private Transform lockedTarget = null;
     private bool isLockedOn = false;
 
+    // 🟢 Dışarıdan kilit durumunu okumak için eklenen Getter'lar
+    public bool IsLockedOn => isLockedOn;
+    public Transform LockedTarget => lockedTarget;
+
     void Start()
     {
         Vector3 angles = transform.eulerAngles;
         x = angles.y;
         y = angles.x;
-
-        //Cursor.lockState = CursorLockMode.Locked;
-        //Cursor.visible = false;
 
         if (target)
         {
@@ -164,38 +164,27 @@ public class SoulsCamera : MonoBehaviour
     {
         GameObject[] enemies = GameObject.FindGameObjectsWithTag(enemyTag);
         Transform bestTarget = null;
-        
-        // En düşük skor en iyi hedef olacağı için başlangıcı sonsuz yapıyoruz
         float bestScore = Mathf.Infinity; 
 
         foreach (GameObject enemy in enemies)
         {
-            // 1. Fiziksel Mesafe Kontrolü
             float physicalDist = Vector3.Distance(target.position, enemy.transform.position);
             if (physicalDist > maxLockOnDistance) continue;
 
-            // 2. Ekran Sınırları Kontrolü (Kameranın arkasındaysa pas geç)
             Vector3 screenPos = Camera.main.WorldToViewportPoint(enemy.transform.position);
             if (screenPos.z < 0) continue;
 
-            // 3. Ekran Ortasına Uzaklık Hesabı
             Vector2 screenCenter = new Vector2(0.5f, 0.5f);
             Vector2 enemyPos2D = new Vector2(screenPos.x, screenPos.y);
             float distanceFromScreenCenter = Vector2.Distance(screenCenter, enemyPos2D);
 
-            // Ekran dışında kalanları eliyoruz (0 ile 1 arası viewport koordinatları)
             if (screenPos.x < 0 || screenPos.x > 1 || screenPos.y < 0 || screenPos.y > 1) continue;
 
-            // --- AKILLI SOULS PUANLAMA MOTORU ---
-            // İki değeri de adil kıyaslamak için 0-1 aralığına normalize ediyoruz.
-            float distanceScore = physicalDist / maxLockOnDistance; // Yakın olanın skoru sıfıra yaklaşır (avantaj)
-            float screenScore = distanceFromScreenCenter * 2f;      // Tam ortada olanın skoru sıfır olur (avantaj)
+            float distanceScore = physicalDist / maxLockOnDistance;
+            float screenScore = distanceFromScreenCenter * 2f;      
 
-            // AĞIRLIK FORMÜLÜ: Yakınlığa %60, Ekran ortalamasına %40 önem veriyoruz.
-            // Bu oranları oyun testlerine göre (Örn: 0.5f'e 0.5f) değiştirebilirsin aga.
             float finalScore = (distanceScore * 0.6f) + (screenScore * 0.4f);
 
-            // En düşük skora sahip olan (En ideal kombinasyon) düşmanı seçiyoruz
             if (finalScore < bestScore)
             {
                 bestScore = finalScore;
