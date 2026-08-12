@@ -24,7 +24,13 @@ public class NPCInteractable : MonoBehaviour
 
     void Update()
     {
-        if (playerInRange && Input.GetKeyDown(interactKey))
+        bool dialogueOpen = DialogueUIController.Instance != null && DialogueUIController.Instance.IsDialogueOpen;
+
+        // Hinweis nur zeigen, wenn Spieler in Reichweite UND gerade kein Dialog laeuft.
+        if (interactionPrompt != null)
+            interactionPrompt.SetActive(playerInRange && !dialogueOpen);
+
+        if (playerInRange && !dialogueOpen && Input.GetKeyDown(interactKey))
         {
             DialogueUIController.Instance.StartDialogue(dialogueStart.GetObject());
         }
@@ -33,18 +39,12 @@ public class NPCInteractable : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag("Player")) return;
-
         playerInRange = true;
-        if (interactionPrompt != null)
-            interactionPrompt.SetActive(true);
     }
 
     void OnTriggerExit(Collider other)
     {
         if (!other.CompareTag("Player")) return;
-
         playerInRange = false;
-        if (interactionPrompt != null)
-            interactionPrompt.SetActive(false);
     }
 }

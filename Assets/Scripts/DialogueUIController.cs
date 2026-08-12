@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using TMPro;
 using Articy.Unity;
 using Articy.Unity.Interfaces;
 
@@ -19,14 +21,23 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
 {
     public static DialogueUIController Instance { get; private set; }
 
+    // Von NPCInteractable.cs abgefragt, um den "Sprechen (E)"-Hinweis waehrend eines laufenden Dialogs auszublenden.
+    public bool IsDialogueOpen { get; private set; }
+
     [Header("UI-Referenzen")]
     public GameObject dialoguePanel;
-    public Text speakerLabel;
-    public Text dialogueText;
+    public TMP_Text speakerLabel;
+    public TMP_Text dialogueText;
     public Button choiceButtonPrefab;
     public Transform choiceButtonContainer;
 
+    [Header("Tasten-Steuerung Antworten")]
+    public KeyCode confirmKey = KeyCode.E;
+
     private ArticyFlowPlayer flowPlayer;
+    private readonly List<Button> currentButtons = new List<Button>();
+    private int selectedIndex = 0;
+    private int buttonsCreatedFrame = -1;
 
     void Awake()
     {
@@ -46,11 +57,41 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
             return;
         }
 
+        IsDialogueOpen = true;
+
         if (dialoguePanel != null)
             dialoguePanel.SetActive(true);
 
         flowPlayer.StartOn = startNode;
         flowPlayer.Play();
+    }
+
+    void Update()
+    {
+        if (currentButtons.Count == 0) return;
+
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            selectedIndex = (selectedIndex + 1) % currentButtons.Count;
+            SelectButton(selectedIndex);
+        }
+        else if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            selectedIndex = (selectedIndex - 1 + currentButtons.Count) % currentButtons.Count;
+            SelectButton(selectedIndex);
+        }
+        // Time.frameCount-Check verhindert, dass derselbe E-Druck, der den Dialog geoeffnet hat,
+        // im selben Frame sofort die erste Antwort mitbestaetigt.
+        else if (Input.GetKeyDown(confirmKey) && Time.frameCount != buttonsCreatedFrame)
+        {
+            currentButtons[selectedIndex].onClick.Invoke();
+        }
+    }
+
+    private void SelectButton(int index)
+    {
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(currentButtons[index].gameObject);
     }
 
     // Wird vom ArticyFlowPlayer aufgerufen, sobald er auf einem "PauseOn"-Objekt (z.B. DialogueFragment) pausiert.
@@ -105,13 +146,22 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
         foreach (var branch in validBranches)
         {
             var button = Instantiate(choiceButtonPrefab, choiceButtonContainer);
-            var label = button.GetComponentInChildren<Text>();
+            var label = button.GetComponentInChildren<TMP_Text>();
             if (label != null)
                 label.text = GetMenuText(branch);
 
             // WICHTIG: lokale Kopie der Schleifenvariable fuer den Closure-Listener.
             var capturedBranch = branch;
             button.onClick.AddListener(() => OnChoiceSelected(capturedBranch));
+
+            currentButtons.Add(button);
+        }
+
+        if (currentButtons.Count > 0)
+        {
+            selectedIndex = 0;
+            buttonsCreatedFrame = Time.frameCount;
+            SelectButton(selectedIndex);
         }
     }
 
@@ -139,12 +189,15 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
 
     private void ClearChoiceButtons()
     {
+        currentButtons.Clear();
+        selectedIndex = 0;
         foreach (Transform child in choiceButtonContainer)
             Destroy(child.gameObject);
     }
 
     private void EndDialogue()
     {
+        IsDialogueOpen = false;
         ClearChoiceButtons();
         if (dialoguePanel != null)
             dialoguePanel.SetActive(false);
