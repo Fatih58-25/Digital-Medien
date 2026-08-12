@@ -17,7 +17,7 @@ public class EnemyBase : MonoBehaviour, IDamageable
 
     [Header("Death Settings")]
     [SerializeField] private string deathTriggerName = "Die"; 
-    [SerializeField] private float timeBeforeDestroy = 3.0f;  
+    [SerializeField] private float timeBeforeDestroy = 7.0f;  
 
     [Header("Angriff (NPC gegen Spieler)")]
     [SerializeField] private Transform attackPoint;           
@@ -104,13 +104,14 @@ public class EnemyBase : MonoBehaviour, IDamageable
     }
 
     private System.Collections.IEnumerator ReenableNavMesh(UnityEngine.AI.NavMeshAgent agent, float delay)
+{
+    yield return new WaitForSeconds(delay);
+    // Yalnızca öldü değilse NavMesh'i tekrar aç
+    if (agent != null && !isDead)
     {
-        yield return new WaitForSeconds(delay);
-        if (agent != null && !isDead)
-        {
-            agent.enabled = true;
-        }
+        agent.enabled = true;
     }
+}
 
     private System.Collections.IEnumerator SmoothMoveFallback(Vector3 offset)
     {
@@ -129,32 +130,42 @@ public class EnemyBase : MonoBehaviour, IDamageable
     }
 
     private void Die()
+{
+    isDead = true;
+    Debug.Log($"{gameObject.name} ist besiegt!");
+
+    // Ölüm event'ini tetikle (Boss HUD kapanacak)
+    OnDied?.Invoke();
+
+    // 1. NavMeshAgent'ı kapat (Hareket etmeyi kessin)
+    UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+    if (agent != null)
     {
-        isDead = true;
-        Debug.Log($"{gameObject.name} ist besiegt!");
-
-        // Ölüm event'ini tetikle (Boss HUD kapanacak)
-        OnDied?.Invoke();
-
-        if (animator != null)
-        {
-            animator.SetTrigger(deathTriggerName);
-        }
-
-        Collider enemyCollider = GetComponent<Collider>();
-        if (enemyCollider != null)
-        {
-            enemyCollider.enabled = false;
-        }
-
-        if (rb != null)
-        {
-            rb.linearVelocity = Vector3.zero;
-            rb.isKinematic = true;
-        }
-
-        Destroy(gameObject, timeBeforeDestroy);
+        agent.isStopped = true;
+        agent.enabled = false;
     }
+
+    // 2. Animator'e erişimi sağlamlaştır ve Trigger'ı çalıştır
+    if (animator == null) animator = GetComponentInChildren<Animator>();
+    if (animator != null)
+    {
+        animator.SetTrigger(deathTriggerName);
+    }
+
+    Collider enemyCollider = GetComponent<Collider>();
+    if (enemyCollider != null)
+    {
+        enemyCollider.enabled = false;
+    }
+
+    if (rb != null)
+    {
+        rb.linearVelocity = Vector3.zero;
+        rb.isKinematic = true;
+    }
+
+    Destroy(gameObject, timeBeforeDestroy);
+}
 
     private System.Collections.IEnumerator FlashDamage()
     {

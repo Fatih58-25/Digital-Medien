@@ -30,16 +30,21 @@ public class SoulsCamera : MonoBehaviour
     public KeyCode lockOnKey = KeyCode.Q; 
     public RectTransform lockOnUI;        
     public float lockOnHeightOffset = 1.2f; 
+    
+    [Header("Custom Lock Point Settings")]
+    [Tooltip("Düşmanın alt nesnelerinde bu ismi barındıran bir obje arar (örn: LockPoint, Chest, Target). Bulamazsa varsayılan offset'i kullanır.")]
+    public string customLockPointName = "Lock"; 
 
     private float x = 0.0f;
     private float y = 0.0f;
     private float lastMouseInputTime;
     private Vector3 cameraTargetCenter; 
 
-    private Transform lockedTarget = null;
+    private Transform lockedTarget = null;     // Ana Düşman Transform'u
+    private Transform actualLockPoint = null; // Kilitlenilecek Alt Nesne Transform'u
     private bool isLockedOn = false;
 
-    // 🟢 Dışarıdan kilit durumunu okumak için eklenen Getter'lar
+    // 🟢 Dışarıdan kilit durumunu okumak için Getter'lar
     public bool IsLockedOn => isLockedOn;
     public Transform LockedTarget => lockedTarget;
 
@@ -89,7 +94,10 @@ public class SoulsCamera : MonoBehaviour
         // 2. ROTASYON HESAPLAMALARI
         if (isLockedOn && lockedTarget != null)
         {
-            Vector3 dirToEnemy = lockedTarget.position - cameraTargetCenter;
+            // Eğer özel kilit noktası (çocuk obje) bulunduysa onun pozisyonunu, yoksa height offset eklenmiş ana pozisyonu al
+            Vector3 aimPosition = actualLockPoint != null ? actualLockPoint.position : (lockedTarget.position + Vector3.up * lockOnHeightOffset);
+
+            Vector3 dirToEnemy = aimPosition - cameraTargetCenter;
             dirToEnemy.y = 0; 
 
             if (dirToEnemy != Vector3.zero)
@@ -105,7 +113,7 @@ public class SoulsCamera : MonoBehaviour
             // --- UI TAKİP VE TİTREMESİZ ÖLÇEKLENDİRME ---
             if (lockOnUI != null)
             {
-                Vector3 worldTargetPos = lockedTarget.position + Vector3.up * lockOnHeightOffset;
+                Vector3 worldTargetPos = aimPosition;
                 Vector3 screenPos = Camera.main.WorldToScreenPoint(worldTargetPos);
 
                 Vector3 currentVelocity = Vector3.zero;
@@ -164,14 +172,19 @@ public class SoulsCamera : MonoBehaviour
     {
         GameObject[] enemies = GameObject.FindGameObjectsWithTag(enemyTag);
         Transform bestTarget = null;
+        Transform bestLockPoint = null;
         float bestScore = Mathf.Infinity; 
 
         foreach (GameObject enemy in enemies)
         {
-            float physicalDist = Vector3.Distance(target.position, enemy.transform.position);
+            // Alt nesnelerde "customLockPointName" (Varsayılan: "Lock") adında bir çocuk arar
+            Transform childLockPoint = FindChildLockPoint(enemy.transform);
+            Transform aimTransform = (childLockPoint != null) ? childLockPoint : enemy.transform;
+
+            float physicalDist = Vector3.Distance(target.position, aimTransform.position);
             if (physicalDist > maxLockOnDistance) continue;
 
-            Vector3 screenPos = Camera.main.WorldToViewportPoint(enemy.transform.position);
+            Vector3 screenPos = Camera.main.WorldToViewportPoint(aimTransform.position);
             if (screenPos.z < 0) continue;
 
             Vector2 screenCenter = new Vector2(0.5f, 0.5f);
@@ -189,20 +202,36 @@ public class SoulsCamera : MonoBehaviour
             {
                 bestScore = finalScore;
                 bestTarget = enemy.transform;
+                bestLockPoint = childLockPoint; // Bulunan alt nesneyi kaydet (bulamadıysa null kalır)
             }
         }
 
         if (bestTarget != null)
         {
             lockedTarget = bestTarget;
+            actualLockPoint = bestLockPoint;
             isLockedOn = true;
             if (lockOnUI != null) lockOnUI.gameObject.SetActive(true);
         }
     }
 
+    // Düşmanın tüm alt çocuklarında isminde "customLockPointName" kelimesi geçen objeyi bulur
+    private Transform FindChildLockPoint(Transform parent)
+    {
+        foreach (Transform child in parent.GetComponentsInChildren<Transform>())
+        {
+            if (child != parent && child.name.ToLower().Contains(customLockPointName.ToLower()))
+            {
+                return child;
+            }
+        }
+        return null;
+    }
+
     private void UnlockTarget()
     {
         lockedTarget = null;
+        actualLockPoint = null;
         isLockedOn = false;
         if (lockOnUI != null) lockOnUI.gameObject.SetActive(false);
     }
