@@ -17331,6 +17331,17 @@ MonoBehaviour:
   droppedRunesPrefab: {fileID: 2071317004218487956, guid: d549789d89b8b1f6abd9b41415e6703b, type: 3}
   runeTextTMP: {fileID: 1062586577}
   runeTextLegacy: {fileID: 0}
+--- !u!114 &1369592807 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 128328625682971874, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
+  m_PrefabInstance: {fileID: 1720276887832188377}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1369592771}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87852144b5097364b851e21e8b952bea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerController
 --- !u!1 &1371464035
 GameObject:
   m_ObjectHideFlags: 0
@@ -17862,6 +17873,14 @@ MonoBehaviour:
   choiceButtonPrefab: {fileID: 5945740777275682941, guid: 95a57f96d392b864386174bb8dd8c6eb, type: 3}
   choiceButtonContainer: {fileID: 2117174117}
   confirmKey: 101
+  playerController: {fileID: 1369592807}
+  playerCombat: {fileID: 1369592807}
+  onStartBossFightMalakor:
+    m_PersistentCalls:
+      m_Calls: []
+  onStartBossFightHekate:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &1425600399
 MonoBehaviour:
   m_ObjectHideFlags: 0

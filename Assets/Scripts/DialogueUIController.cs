@@ -2,9 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.Events;
 using TMPro;
 using Articy.Unity;
 using Articy.Unity.Interfaces;
+using Articy.Digitial_media_story.GlobalVariables;
 
 // Zentrale Dialog-Steuerung fuer die Souls-like Dialoge (Hekate, Corven, Imeth, Malakor).
 // Baut auf denselben Interfaces auf, die ArticyDebugFlowPlayer.cs (Assets/ArticyImporter/Helper/Scripts)
@@ -34,6 +36,18 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
     [Header("Tasten-Steuerung Antworten")]
     public KeyCode confirmKey = KeyCode.E;
 
+    [Header("Spieler waehrend des Dialogs sperren")]
+    [Tooltip("Z.B. das PlayerController-Script aus Assets/Player/Script - wird waehrend des Dialogs deaktiviert.")]
+    public MonoBehaviour playerController;
+    [Tooltip("Optional: z.B. PlayerCombatSystem, falls Kaempfen waehrend des Dialogs auch gesperrt werden soll.")]
+    public MonoBehaviour playerCombat;
+
+    [Header("Bosskampf-Trigger (GameState-Variablen aus articy)")]
+    [Tooltip("Wird ausgeloest, wenn GameState.StartBossFightMalakor beim Dialogende true ist. Im Inspector z.B. mit BossManager.StartFight(malakor) verknuepfen.")]
+    public UnityEvent onStartBossFightMalakor;
+    [Tooltip("Wird ausgeloest, wenn GameState.StartBossFightHekate beim Dialogende true ist.")]
+    public UnityEvent onStartBossFightHekate;
+
     private ArticyFlowPlayer flowPlayer;
     private readonly List<Button> currentButtons = new List<Button>();
     private int selectedIndex = 0;
@@ -58,12 +72,19 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
         }
 
         IsDialogueOpen = true;
+        SetPlayerControlEnabled(false);
 
         if (dialoguePanel != null)
             dialoguePanel.SetActive(true);
 
         flowPlayer.StartOn = startNode;
         flowPlayer.Play();
+    }
+
+    private void SetPlayerControlEnabled(bool value)
+    {
+        if (playerController != null) playerController.enabled = value;
+        if (playerCombat != null) playerCombat.enabled = value;
     }
 
     void Update()
@@ -201,5 +222,29 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
         ClearChoiceButtons();
         if (dialoguePanel != null)
             dialoguePanel.SetActive(false);
+
+        SetPlayerControlEnabled(true);
+        CheckBossFightTriggers();
+    }
+
+    // Prueft nach jedem Dialogende, ob articy die GameState-Trigger gesetzt hat, und feuert die
+    // passenden UnityEvents genau einmal. Danach wird die Variable zurueckgesetzt, damit ein
+    // spaeterer, unabhaengiger Dialog nicht versehentlich denselben Kampf nochmal auslöst.
+    private void CheckBossFightTriggers()
+    {
+        var vars = ArticyGlobalVariables.Default;
+        if (vars == null) return;
+
+        if (vars.GameState.StartBossFightMalakor)
+        {
+            vars.GameState.StartBossFightMalakor = false;
+            onStartBossFightMalakor?.Invoke();
+        }
+
+        if (vars.GameState.StartBossFightHekate)
+        {
+            vars.GameState.StartBossFightHekate = false;
+            onStartBossFightHekate?.Invoke();
+        }
     }
 }
