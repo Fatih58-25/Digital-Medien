@@ -12,6 +12,7 @@ public class PlayerController : MonoBehaviour
     public float rotationSpeed = 10f;
     public float gravity = 9.81f;
     public float jumpHeight = 2.0f;
+    private PlayerHealth playerHealth;
 
     [Header("Animation Reference")]
     [SerializeField] private PlayerAnimator playerAnimator;
@@ -35,6 +36,7 @@ public class PlayerController : MonoBehaviour
         combatSystem = GetComponent<PlayerCombatSystem>();
         playerStamina = GetComponent<PlayerStamina>();
         playerFlaskSystem = GetComponent<PlayerFlaskSystem>();
+        playerHealth = GetComponent<PlayerHealth>();
 
         if (playerAnimator == null)
         {
@@ -59,6 +61,7 @@ public class PlayerController : MonoBehaviour
 
     void MovePlayer()
     {
+        if (playerHealth != null && playerHealth.IsDead) return;
         bool isAttacking = combatSystem != null && combatSystem.IsAttacking;
         bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
         bool isExhausted = playerStamina != null && playerStamina.IsExhausted;

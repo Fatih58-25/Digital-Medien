@@ -1,5 +1,5 @@
 using UnityEngine;
-using System; // Action için gerekli
+using System;
 
 public class PlayerHealth : MonoBehaviour, IDamageable
 {
@@ -9,8 +9,12 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     private Animator animator;
     private bool isDead = false;
 
-    // UI için Event
+    // Dışarıdan okunabilir ölüm durumu
+    public bool IsDead => isDead;
+
+    // UI ve GameManager için Event'ler
     public event Action<float, float> OnHealthChanged;
+    public event Action OnPlayerDied; // 🟢 GameManager'a haber vermek için ekledik
 
     private void Awake()
     {
@@ -50,7 +54,6 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         currentHealth -= finalDamage;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
 
-        // UI Güncellemesini tetikle
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
         if (currentHealth <= 0) Die();
@@ -59,20 +62,31 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public void TakeDamage(int damage) => TakeDamage(damage, null);
 
     private void Die()
-    {
-        isDead = true;
-        animator?.SetTrigger("Die");
-    }
-
-    // PlayerHealth.cs içine eklenecek metot:
-public void Heal(int amount)
 {
-    if (isDead) return;
+    isDead = true;
+    animator?.SetTrigger("Die");
 
-    currentHealth += amount;
-    currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+    // Event'i tetikle
+    OnPlayerDied?.Invoke();
 
-    // UI'a haber ver
-    OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    // 🟢 GARANTİ ÇÖZÜM: GameManager'a doğrudan haber ver!
+    if (GameManager.Instance != null)
+    {
+        GameManager.Instance.OnPlayerDiedDirectCall();
+    }
+    else
+    {
+        Debug.LogError("Sahnede GameManager bulunamadı!");
+    }
 }
+
+    public void Heal(int amount)
+    {
+        if (isDead) return;
+
+        currentHealth += amount;
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
 }

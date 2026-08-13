@@ -35,6 +35,7 @@ public class PlayerCombatSystem : MonoBehaviour
     private CharacterController charController;
     private PlayerStamina playerStamina;
     private PlayerFlaskSystem playerFlaskSystem;
+    private PlayerHealth playerHealth;
 
     private float lastAttackTime;
     private float lastRollTime;
@@ -42,6 +43,7 @@ public class PlayerCombatSystem : MonoBehaviour
     private float rollEndTime;
     private bool isInvincible = false;
     private float iframeEndTime;
+
 
     private int currentAttackCombo = 0;
     private int queuedComboIndex = 1;
@@ -61,10 +63,12 @@ public class PlayerCombatSystem : MonoBehaviour
         charController = GetComponent<CharacterController>();
         playerStamina = GetComponent<PlayerStamina>();
         playerFlaskSystem = GetComponent<PlayerFlaskSystem>();
+        playerHealth = GetComponent<PlayerHealth>();
     }
 
     private void Update()
     {
+        if (playerHealth != null && playerHealth.IsDead) return;
         if (isStaggered) return;
 
         HandleRollInput();
