@@ -36,10 +36,7 @@ public class PlayerRunes : MonoBehaviour
     private void Update()
     {
         // 🧪 TEST: 'K' tuşuna basınca 500 Rün ekler
-        if (Input.GetKeyDown(KeyCode.K))
-        {
-            AddRunes(500);
-        }
+        
     }
 
     private void OnEnable()

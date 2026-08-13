@@ -6788,6 +6788,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBase
   isBoss: 0
   bossName: Ancient Dragon
+  runeReward: 100
   maxHealth: 50
   knockbackForce: 5
   damageColor: {r: 1, g: 0, b: 0, a: 1}
@@ -8616,6 +8617,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBase
   isBoss: 1
   bossName: Asylum Demon
+  runeReward: 1000
   maxHealth: 250
   knockbackForce: 5
   damageColor: {r: 1, g: 0, b: 0, a: 1}
@@ -11157,10 +11159,10 @@ PrefabInstance:
       addedObject: {fileID: 1132374240}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4948de0fe7f37aa89af68ebed28f80e4, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1132374238}
+      addedObject: {fileID: 1132374244}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4948de0fe7f37aa89af68ebed28f80e4, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1132374244}
+      addedObject: {fileID: 1132374245}
   m_SourcePrefab: {fileID: 100100000, guid: 4948de0fe7f37aa89af68ebed28f80e4, type: 3}
 --- !u!1 &892759311
 GameObject:
@@ -13221,29 +13223,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 4948de0fe7f37aa89af68ebed28f80e4, type: 3}
   m_PrefabInstance: {fileID: 889736842}
   m_PrefabAsset: {fileID: 0}
---- !u!136 &1132374238
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1132374236}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 1
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1132374240
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13321,7 +13300,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBase
   isBoss: 0
   bossName: Ancient Dragon
-  maxHealth: 50
+  runeReward: 500
+  maxHealth: 100
   knockbackForce: 5
   damageColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.1
@@ -13351,6 +13331,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07657894137c64f3a8edb782bd9bc953, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+--- !u!136 &1132374245
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1132374236}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 1
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!64 &1136480394
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -16194,6 +16197,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBase
   isBoss: 1
   bossName: Crucible Knight
+  runeReward: 2500
   maxHealth: 200
   knockbackForce: 5
   damageColor: {r: 1, g: 0, b: 0, a: 1}
@@ -23476,7 +23480,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2224406829982947139, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2224406829982947139, guid: e9a78cd9fb165944b92f2e32de15b792, type: 3}
       propertyPath: m_TagString
@@ -25043,6 +25047,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyBase
   isBoss: 1
   bossName: Welcome
+  runeReward: 600
   maxHealth: 70
   knockbackForce: 5
   damageColor: {r: 1, g: 0, b: 0, a: 1}

@@ -4,8 +4,11 @@ using System;
 public class EnemyBase : MonoBehaviour, IDamageable
 {
     [Header("Boss Settings")]
-    [SerializeField] private bool isBoss = false;              // Tik atılırsa Boss olur!
-    [SerializeField] private string bossName = "Ancient Dragon"; // Ekranın altında yazacak isim
+    [SerializeField] private bool isBoss = false;              
+    [SerializeField] private string bossName = "Ancient Dragon"; 
+
+    [Header("Rune Reward (Rün Ödülü)")]
+    [SerializeField] private int runeReward = 100; // 🟢 Düşman ölünce verilecek rün miktarı!
 
     [Header("Health")]
     [SerializeField] private int maxHealth = 50;
@@ -63,7 +66,6 @@ public class EnemyBase : MonoBehaviour, IDamageable
         currentHealth -= damage;
         Debug.Log($"{gameObject.name} nimmt {damage} Schaden! Verbleibende Health: {currentHealth}");
 
-        // UI Güncelleme Eventi Tetikle
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
 
         if (flashRoutine != null)
@@ -104,14 +106,13 @@ public class EnemyBase : MonoBehaviour, IDamageable
     }
 
     private System.Collections.IEnumerator ReenableNavMesh(UnityEngine.AI.NavMeshAgent agent, float delay)
-{
-    yield return new WaitForSeconds(delay);
-    // Yalnızca öldü değilse NavMesh'i tekrar aç
-    if (agent != null && !isDead)
     {
-        agent.enabled = true;
+        yield return new WaitForSeconds(delay);
+        if (agent != null && !isDead)
+        {
+            agent.enabled = true;
+        }
     }
-}
 
     private System.Collections.IEnumerator SmoothMoveFallback(Vector3 offset)
     {
@@ -130,42 +131,52 @@ public class EnemyBase : MonoBehaviour, IDamageable
     }
 
     private void Die()
-{
-    isDead = true;
-    Debug.Log($"{gameObject.name} ist besiegt!");
-
-    // Ölüm event'ini tetikle (Boss HUD kapanacak)
-    OnDied?.Invoke();
-
-    // 1. NavMeshAgent'ı kapat (Hareket etmeyi kessin)
-    UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-    if (agent != null)
     {
-        agent.isStopped = true;
-        agent.enabled = false;
-    }
+        if (isDead) return;
+        isDead = true;
+        Debug.Log($"{gameObject.name} ist besiegt!");
 
-    // 2. Animator'e erişimi sağlamlaştır ve Trigger'ı çalıştır
-    if (animator == null) animator = GetComponentInChildren<Animator>();
-    if (animator != null)
-    {
-        animator.SetTrigger(deathTriggerName);
-    }
+        // 🟢 GARANTİ RÜN VERME: Doğrudan PlayerRunes bileşenini arayıp rünü ekler!
+        PlayerRunes playerRunes = FindObjectOfType<PlayerRunes>();
+        if (playerRunes != null)
+        {
+            playerRunes.AddRunes(runeReward);
+            Debug.Log($"🟢 {gameObject.name} öldürüldü! Oyuncuya {runeReward} rün eklendi.");
+        }
+        else
+        {
+            Debug.LogError("❌ HATA: Sahnede PlayerRunes script'ine sahip bir obje bulunamadı!");
+        }
 
-    Collider enemyCollider = GetComponent<Collider>();
-    if (enemyCollider != null)
-    {
-        enemyCollider.enabled = false;
-    }
+        OnDied?.Invoke();
 
-    if (rb != null)
-    {
-        rb.linearVelocity = Vector3.zero;
-        rb.isKinematic = true;
-    }
+        UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null)
+        {
+            agent.isStopped = true;
+            agent.enabled = false;
+        }
 
-    Destroy(gameObject, timeBeforeDestroy);
-}
+        if (animator == null) animator = GetComponentInChildren<Animator>();
+        if (animator != null)
+        {
+            animator.SetTrigger(deathTriggerName);
+        }
+
+        Collider enemyCollider = GetComponent<Collider>();
+        if (enemyCollider != null)
+        {
+            enemyCollider.enabled = false;
+        }
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.isKinematic = true;
+        }
+
+        Destroy(gameObject, timeBeforeDestroy);
+    }
 
     private System.Collections.IEnumerator FlashDamage()
     {
