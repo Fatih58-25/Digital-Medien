@@ -89,4 +89,11 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
+    public void RestoreFullHealth()
+{
+    if (isDead) isDead = false; // Eğer ölü durumu kaldıysa sıfırla
+
+    currentHealth = maxHealth;
+    OnHealthChanged?.Invoke(currentHealth, maxHealth); // UI'ı anında güncelle
+}
 }

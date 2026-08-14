@@ -25,18 +25,6 @@ public class PlayerRunes : MonoBehaviour
     private void Start()
     {
         UpdateUI();
-
-        // 🟢 OYUNCU DOĞDUĞUNDA: Eğer yerde doğmayı bekleyen gizli bir rün varsa görünür yap!
-        if (activeDroppedRuneInstance != null)
-        {
-            activeDroppedRuneInstance.SetActive(true);
-        }
-    }
-
-    private void Update()
-    {
-        // 🧪 TEST: 'K' tuşuna basınca 500 Rün ekler
-        
     }
 
     private void OnEnable()
@@ -60,22 +48,15 @@ public class PlayerRunes : MonoBehaviour
 
     private void UpdateUI()
     {
-        if (runeTextTMP != null)
-        {
-            runeTextTMP.text = currentRunes.ToString();
-        }
-        
-        if (runeTextLegacy != null)
-        {
-            runeTextLegacy.text = currentRunes.ToString();
-        }
+        if (runeTextTMP != null) runeTextTMP.text = currentRunes.ToString();
+        if (runeTextLegacy != null) runeTextLegacy.text = currentRunes.ToString();
     }
 
     private void HandleDeath()
     {
         if (currentRunes <= 0 && activeDroppedRuneInstance == null) return;
 
-        // Eski toplanmamış rün varsa sil
+        // Üst üste 2 kez ölünce eski rün silinir (Souls kuralı)
         if (activeDroppedRuneInstance != null)
         {
             Destroy(activeDroppedRuneInstance);
@@ -86,13 +67,9 @@ public class PlayerRunes : MonoBehaviour
         {
             Vector3 spawnPosition = transform.position + Vector3.up * 0.5f;
             
-            // Rünü öldüğün konumda oluştur
+            // 🔴 Rünü öldüğün yerde GİZLİ (KAPALI) olarak oluşturuyoruz!
             activeDroppedRuneInstance = Instantiate(droppedRunesPrefab, spawnPosition, Quaternion.identity);
-            
-            // 🔴 İŞTE SİHİRLİ DOKUNUŞ: Ölüm anında rünü GİZLE! (Kamerayı kapatmasın)
-            activeDroppedRuneInstance.SetActive(false);
-
-            DontDestroyOnLoad(activeDroppedRuneInstance);
+            activeDroppedRuneInstance.SetActive(false); 
 
             DroppedRunes runeScript = activeDroppedRuneInstance.GetComponent<DroppedRunes>();
             if (runeScript != null)
@@ -102,6 +79,16 @@ public class PlayerRunes : MonoBehaviour
 
             currentRunes = 0;
             UpdateUI();
+        }
+    }
+
+    // 🟢 Sadece Bonfire'da doğunca GameManager tarafından çağrılacak!
+    public void RevealDroppedRunes()
+    {
+        if (activeDroppedRuneInstance != null)
+        {
+            activeDroppedRuneInstance.SetActive(true);
+            Debug.Log("✨ Yerdeki rünler görünür kılındı!");
         }
     }
 }

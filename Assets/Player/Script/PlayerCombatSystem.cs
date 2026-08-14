@@ -4,8 +4,8 @@ using System.Collections;
 public class PlayerCombatSystem : MonoBehaviour
 {
     [Header("Stamina Ayarları")]
-    [SerializeField] private float attackStaminaCost = 20f; // Her saldırının harcadığı stamina
-    [SerializeField] private float rollStaminaCost = 15f;   // Yuvarlanmanın harcadığı stamina
+    [SerializeField] private float attackStaminaCost = 20f; 
+    [SerializeField] private float rollStaminaCost = 15f;   
 
     [Header("Angriff")]
     [SerializeField] private float attackCooldown = 0.4f;
@@ -26,8 +26,8 @@ public class PlayerCombatSystem : MonoBehaviour
     [Header("Souls-like Rollen & iFrames")]
     [SerializeField] private float rollCooldown = 1.0f;
     [SerializeField] private float rollDuration = 0.6f;
-    [SerializeField] private float iframeDelay = 0.08f;    // 🟢 iFrame'in başlama gecikmesi (Saniye)
-    [SerializeField] private float iframeDuration = 0.35f; // iFrame'in ne kadar süreceği
+    [SerializeField] private float iframeDelay = 0.08f;    
+    [SerializeField] private float iframeDuration = 0.35f; 
     [SerializeField] private KeyCode rollKey = KeyCode.X;
 
     private PlayerAnimator playerAnimator;
@@ -44,7 +44,6 @@ public class PlayerCombatSystem : MonoBehaviour
     private bool isInvincible = false;
     private float iframeEndTime;
 
-
     private int currentAttackCombo = 0;
     private int queuedComboIndex = 1;
 
@@ -54,7 +53,7 @@ public class PlayerCombatSystem : MonoBehaviour
     public float shiftPressTime = 0f;
     private bool isShiftPressed = false;
 
-    private Coroutine iframeCoroutine; // iFrame gecikme korutini takibi
+    private Coroutine iframeCoroutine; 
 
     private void Start()
     {
@@ -79,11 +78,29 @@ public class PlayerCombatSystem : MonoBehaviour
         UpdateComboState();
     }
 
+    // 🟢 RESPAWN OLUNCA SAVAŞ DURUMLARINI TEMİZLE
+    public void ResetCombatState()
+    {
+        isAttacking = false;
+        isRolling = false;
+        isBlocking = false;
+        isStaggered = false;
+        isInvincible = false;
+        currentAttackCombo = 0;
+        
+        if (iframeCoroutine != null)
+        {
+            StopCoroutine(iframeCoroutine);
+        }
+
+        CancelInvoke(nameof(ResetStagger));
+    }
+
     private void HandleAttackInput()
     {
         bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
 
-        if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !isAttacking && !isDrinking && !playerController.IsDucking)
+        if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !isAttacking && !isDrinking && (playerController != null && !playerController.IsDucking))
         {
             if (Time.time - lastAttackTime >= attackCooldown)
             {
@@ -99,7 +116,7 @@ public class PlayerCombatSystem : MonoBehaviour
     {
         bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
 
-        if (!Input.GetMouseButton(1) || isRolling || isAttacking || isDrinking || playerController.IsDucking)
+        if (!Input.GetMouseButton(1) || isRolling || isAttacking || isDrinking || (playerController != null && playerController.IsDucking))
         {
             if (isBlocking) StopBlocking();
             return;
@@ -122,7 +139,7 @@ public class PlayerCombatSystem : MonoBehaviour
             isShiftPressed = false;
             float pressDuration = Time.time - shiftPressTime;
 
-            if (pressDuration < 0.2f && !isRolling && !isAttacking && !isDrinking && !playerController.IsDucking)
+            if (pressDuration < 0.2f && !isRolling && !isAttacking && !isDrinking && (playerController != null && !playerController.IsDucking))
             {
                 if (Time.time - lastRollTime >= rollCooldown)
                 {
@@ -157,34 +174,27 @@ public class PlayerCombatSystem : MonoBehaviour
         isRolling = true;
         rollEndTime = Time.time + rollDuration;
 
-        playerAnimator?.GetComponent<Animator>().SetTrigger("Roll");
+        playerAnimator?.GetComponent<Animator>()?.SetTrigger("Roll");
 
-        // 🟢 iFrame penceresini hafif gecikmeli olarak başlatır
         if (iframeCoroutine != null) StopCoroutine(iframeCoroutine);
         iframeCoroutine = StartCoroutine(ActivateIFrameRoutine());
     }
 
-    // 🟢 iFrame Gecikme ve Süreç Mantığı
     private IEnumerator ActivateIFrameRoutine()
     {
         isInvincible = false;
-
-        // 1. Çok hafif gecikme süresi kadar bekle (Örn: 0.08 saniye)
         yield return new WaitForSeconds(iframeDelay);
-
-        // 2. iFrame penceresini aç
         isInvincible = true;
         iframeEndTime = Time.time + iframeDuration;
     }
 
-    private void StartBlocking() { isBlocking = true; playerAnimator?.GetComponent<Animator>().SetBool("IsBlocking", true); }
-    private void StopBlocking() { isBlocking = false; playerAnimator?.GetComponent<Animator>().SetBool("IsBlocking", false); }
+    private void StartBlocking() { isBlocking = true; playerAnimator?.GetComponent<Animator>()?.SetBool("IsBlocking", true); }
+    private void StopBlocking() { isBlocking = false; playerAnimator?.GetComponent<Animator>()?.SetBool("IsBlocking", false); }
 
     public void ApplyStagger(float duration, Vector3 knockbackDir, float force)
     {
         if (isInvincible) return;
 
-        // Darbe yendiğinde iksir içmeyi ve aktif iFrame sürecini iptal et
         playerFlaskSystem?.InterruptDrink();
         if (iframeCoroutine != null) StopCoroutine(iframeCoroutine);
 
@@ -195,7 +205,7 @@ public class PlayerCombatSystem : MonoBehaviour
         ResetCombo();
 
         isStaggered = true;
-        playerAnimator?.GetComponent<Animator>().SetTrigger("Stagger");
+        playerAnimator?.GetComponent<Animator>()?.SetTrigger("Stagger");
         
         StartCoroutine(ApplyKnockbackEffect(knockbackDir, force));
         

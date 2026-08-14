@@ -141,4 +141,9 @@ public class PlayerFlaskSystem : MonoBehaviour
     {
         OnFlaskCountChanged?.Invoke(currentFlasks, maxFlasks, currentFlasks <= 0);
     }
+    public void RefillFlasks()
+{
+    currentFlasks = maxFlasks;
+    NotifyUI(); // UI'ı anında güncelle (Şişe sayısını full göster)
+}
 }

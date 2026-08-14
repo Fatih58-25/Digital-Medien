@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections;
 
 public class EnemyBase : MonoBehaviour, IDamageable
 {
@@ -8,7 +9,7 @@ public class EnemyBase : MonoBehaviour, IDamageable
     [SerializeField] private string bossName = "Ancient Dragon"; 
 
     [Header("Rune Reward (Rün Ödülü)")]
-    [SerializeField] private int runeReward = 100; // 🟢 Düşman ölünce verilecek rün miktarı!
+    [SerializeField] private int runeReward = 100; // Düşman ölünce verilecek rün miktarı
 
     [Header("Health")]
     [SerializeField] private int maxHealth = 50;
@@ -31,6 +32,8 @@ public class EnemyBase : MonoBehaviour, IDamageable
     [Header("Setup")]
     [SerializeField] private Renderer myRenderer;
 
+    private Vector3 initialPosition;
+    private Quaternion initialRotation;
     private int currentHealth;
     private Color originalColor;
     private Rigidbody rb;
@@ -44,6 +47,8 @@ public class EnemyBase : MonoBehaviour, IDamageable
 
     private void Awake()
     {
+        initialPosition = transform.position;
+        initialRotation = transform.rotation;
         currentHealth = maxHealth;
         rb = GetComponent<Rigidbody>();
         animator = GetComponentInChildren<Animator>();
@@ -105,7 +110,7 @@ public class EnemyBase : MonoBehaviour, IDamageable
         }
     }
 
-    private System.Collections.IEnumerator ReenableNavMesh(UnityEngine.AI.NavMeshAgent agent, float delay)
+    private IEnumerator ReenableNavMesh(UnityEngine.AI.NavMeshAgent agent, float delay)
     {
         yield return new WaitForSeconds(delay);
         if (agent != null && !isDead)
@@ -114,7 +119,7 @@ public class EnemyBase : MonoBehaviour, IDamageable
         }
     }
 
-    private System.Collections.IEnumerator SmoothMoveFallback(Vector3 offset)
+    private IEnumerator SmoothMoveFallback(Vector3 offset)
     {
         float duration = 0.15f;
         float elapsed = 0f;
@@ -136,7 +141,7 @@ public class EnemyBase : MonoBehaviour, IDamageable
         isDead = true;
         Debug.Log($"{gameObject.name} ist besiegt!");
 
-        // 🟢 GARANTİ RÜN VERME: Doğrudan PlayerRunes bileşenini arayıp rünü ekler!
+        // GARANTİ RÜN VERME
         PlayerRunes playerRunes = FindObjectOfType<PlayerRunes>();
         if (playerRunes != null)
         {
@@ -175,10 +180,16 @@ public class EnemyBase : MonoBehaviour, IDamageable
             rb.isKinematic = true;
         }
 
-        Destroy(gameObject, timeBeforeDestroy);
+        StartCoroutine(DisableAfterDeath());
     }
 
-    private System.Collections.IEnumerator FlashDamage()
+    private IEnumerator DisableAfterDeath()
+    {
+        yield return new WaitForSeconds(timeBeforeDestroy);
+        gameObject.SetActive(false); // Obje silinmiyor, sadece gizleniyor.
+    }
+
+    private IEnumerator FlashDamage()
     {
         if (myRenderer == null) yield break;
 
@@ -213,6 +224,75 @@ public class EnemyBase : MonoBehaviour, IDamageable
     }
 
     public void OnAttackHit() { }
+
+    // 🟢 BONFIRE VE RESTART ANINDA ÇAĞRILAN RESPNAWN METODU
+   public void RespawnEnemy()
+{
+    // 1. Boss ise ve öldüyse doğma!
+    if (isBoss && isDead) return;
+
+    // 🟢 SİHİRLİ SATIR: Eğer düşman ÖLMEMİŞSE ve ŞU AN KAPALIYSA (Pusu düşmanı/Henüz tetiklenmemiş) DOKUNMA!
+    if (!isDead && !gameObject.activeSelf) return;
+
+    // 2. Ölüm sonrası gizlenme sayacını ve diğer coroutines sıfırla
+    StopAllCoroutines();
+
+    // 3. Durumları ve Canı Sıfırla
+    isDead = false;
+    currentHealth = maxHealth;
+    OnHealthChanged?.Invoke(currentHealth, maxHealth);
+
+    // Renk sıfırlama
+    if (myRenderer != null)
+    {
+        myRenderer.material.color = originalColor;
+    }
+
+    // 4. Obje ve Collider/Rigidbody Ayarlarını Aç
+    gameObject.SetActive(true);
+
+    Collider enemyCollider = GetComponent<Collider>();
+    if (enemyCollider != null)
+    {
+        enemyCollider.enabled = true;
+    }
+
+    if (rb != null)
+    {
+        rb.isKinematic = false;
+        rb.linearVelocity = Vector3.zero;
+    }
+
+    // 5. NavMesh ve Pozisyonu İlk Noktaya Işınla (Kovalama Agrosunu Keser)
+    UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+    if (agent != null)
+    {
+        agent.enabled = false;
+        transform.position = initialPosition;
+        transform.rotation = initialRotation;
+        agent.enabled = true;
+
+        if (agent.isOnNavMesh)
+        {
+            agent.Warp(initialPosition);
+            agent.isStopped = false;
+            agent.velocity = Vector3.zero;
+        }
+    }
+    else
+    {
+        transform.position = initialPosition;
+        transform.rotation = initialRotation;
+    }
+
+    // 6. Animasyonu Sıfırla
+    if (animator == null) animator = GetComponentInChildren<Animator>();
+    if (animator != null)
+    {
+        animator.Rebind();
+        animator.Update(0f);
+    }
+}
 
     // GETTER PROPERTIES
     public bool IsBoss => isBoss;

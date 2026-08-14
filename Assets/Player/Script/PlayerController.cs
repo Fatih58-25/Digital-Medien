@@ -55,7 +55,7 @@ public class PlayerController : MonoBehaviour
     }
 
     void Update()
-    {
+    { if (controller == null || !controller.enabled) return;
         MovePlayer();
     }
 

@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using System.Collections;
 
 public class GameManager : MonoBehaviour
@@ -10,12 +9,15 @@ public class GameManager : MonoBehaviour
     public Vector3 lastCheckpointPosition;
     public bool hasCheckpoint = false;
 
-    [Header("UI Settings")]
+    [Header("YOU DIED Banner Settings")]
     [SerializeField] private CanvasGroup youDiedCanvasGroup; 
-    [SerializeField] private float fadeDuration = 2.0f;
-    [SerializeField] private float respawnDelay = 3.5f;
+    [SerializeField] private float fadeDuration = 1.0f;
+    
+    // 🟢 Süreyi 2 saniye daha uzattık (3.5 saniye yaptık)
+    [SerializeField] private float delayBeforeGameOverMenu = 3.5f;
 
-    private PlayerHealth playerHealth;
+    [Header("Ana Menü / Game Over Canvas'ı")]
+    [SerializeField] private GameObject menuCanvas; 
 
     private void Awake()
     {
@@ -31,66 +33,26 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void OnEnable()
+    private void Start()
     {
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
+        SetupInitialCheckpoint();
 
-    private void OnDisable()
-    {
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
+        // 🛑 BURADAKİ KAPATMA KODUNU KALDIRDIK!
+        // Artık oyun başlangıcında Ana Menü Canvas'ına dokunmuyoruz.
 
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        // 🟢 1. Her sahne yüklendiğinde yeni sahnede olan UI Paneli yeniden bul
-        FindUIReferences();
-
-        // 2. Oyuncuyu bul ve pozisyonunu ayarla
-        FindAndSetupPlayer();
-    }
-
-    private void FindUIReferences()
-    {
-        // Sahnede "YouDiedPanel" ismindeki objeyi ara
-        GameObject panelObj = GameObject.Find("YouDiedPanel");
-        if (panelObj != null)
+        if (youDiedCanvasGroup != null)
         {
-            youDiedCanvasGroup = panelObj.GetComponent<CanvasGroup>();
-            if (youDiedCanvasGroup != null)
-            {
-                youDiedCanvasGroup.alpha = 0f;
-                youDiedCanvasGroup.gameObject.SetActive(true); // Obje açık kalsın, Alpha ile yöneteceğiz
-            }
-        }
-        else
-        {
-            Debug.LogWarning("Sahnede 'YouDiedPanel' isimli UI objesi bulunamadı!");
+            youDiedCanvasGroup.alpha = 0f;
         }
     }
 
-    private void FindAndSetupPlayer()
+    private void SetupInitialCheckpoint()
     {
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
+        if (playerObj != null && !hasCheckpoint)
         {
-            playerHealth = playerObj.GetComponent<PlayerHealth>();
-
-            // Kaydedilmiş Checkpoint varsa oyuncuyu oraya ışınla
-            if (hasCheckpoint)
-            {
-                CharacterController controller = playerObj.GetComponent<CharacterController>();
-                if (controller != null) controller.enabled = false;
-
-                playerObj.transform.position = lastCheckpointPosition;
-
-                if (controller != null) controller.enabled = true;
-            }
-            else
-            {
-                lastCheckpointPosition = playerObj.transform.position;
-                hasCheckpoint = true;
-            }
+            lastCheckpointPosition = playerObj.transform.position;
+            hasCheckpoint = true;
         }
     }
 
@@ -98,7 +60,7 @@ public class GameManager : MonoBehaviour
     {
         lastCheckpointPosition = newPosition;
         hasCheckpoint = true;
-        Debug.Log("Checkpoint Kaydedildi: " + newPosition);
+        Debug.Log("🔥 Checkpoint Kaydedildi: " + newPosition);
     }
 
     public void OnPlayerDiedDirectCall()
@@ -108,18 +70,21 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator PlayerDeathSequence()
     {
-        yield return new WaitForSeconds(1.0f);
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
 
-        // Eğer yeni CanvasGroup referansı her ihtimale karşı boşsa tekrar bulmayı dene
-        if (youDiedCanvasGroup == null)
+        // 1. Düşmanlar ölü bedene vurmayı kessin (Collider kapat)
+        if (playerObj != null)
         {
-            FindUIReferences();
+            Collider col = playerObj.GetComponent<Collider>();
+            if (col != null) col.enabled = false;
         }
 
+        yield return new WaitForSeconds(0.5f);
+
+        // 2. YOU DIED Şeridi Yavaşça Gelir
         if (youDiedCanvasGroup != null)
         {
             float timer = 0f;
-
             while (timer < fadeDuration)
             {
                 timer += Time.deltaTime;
@@ -129,9 +94,77 @@ public class GameManager : MonoBehaviour
             youDiedCanvasGroup.alpha = 1f;
         }
 
-        yield return new WaitForSeconds(respawnDelay);
+        // 🟢 3. YOU DIED YAZISINI UZUNCA İZLET (3.5 saniye bekleme)
+        yield return new WaitForSeconds(delayBeforeGameOverMenu);
 
-        // Sahneyi yeniden yükle
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        // 🟢 4. ÖLDÜKTEN 3.5 SN SONRA MENÜ CANVAS'INI AKTİFLEŞTİR
+        if (menuCanvas != null)
+        {
+            menuCanvas.SetActive(true);
+        }
+
+        // 5. Fare imlecini aç
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
+
+    // RESTART BUTONUNA BASILINCA
+   public void RespawnPlayerInPlace()
+{
+    GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+    if (playerObj == null) return;
+
+    CharacterController controller = playerObj.GetComponent<CharacterController>();
+    PlayerHealth health = health = playerObj.GetComponent<PlayerHealth>();
+    PlayerRunes runes = playerObj.GetComponent<PlayerRunes>();
+    Collider col = playerObj.GetComponent<Collider>();
+
+    // 🟢 1. DOĞRU ANIMATOR'Ü BUL VE NÜKLEER SIFIRLAMA YAP
+    Animator anim = playerObj.GetComponentInChildren<Animator>();
+    if (anim != null)
+    {
+        // Konsoldan doğru Animator'ü mü yakaladık kontrol et
+        Debug.Log("🟢 Bulunan Animator Objesi: " + anim.gameObject.name);
+
+        // Bütün parametreleri (Die, isDead vb.) sıfırlar ve Entry state'e fırlatır
+        anim.Rebind(); 
+        anim.Update(0f); // Değişikliği anında sahneye uygular
+    }
+    else
+    {
+        Debug.LogError("🔴 HATA: Oyuncunun üzerinde Animator bulunamadı!");
+    }
+
+    // 2. Fizik ve Sağlık Sıfırlama
+    if (controller != null) controller.enabled = false;
+    if (health != null) health.RestoreFullHealth();
+    if (col != null) col.enabled = true;
+
+    // 3. Bonfire'a Işınlanma
+    playerObj.transform.position = lastCheckpointPosition;
+    Physics.SyncTransforms();
+
+    if (controller != null) controller.enabled = true;
+
+    // 4. Flask ve Rünler
+    PlayerFlaskSystem flasks = playerObj.GetComponent<PlayerFlaskSystem>();
+    if (flasks != null) flasks.RefillFlasks();
+
+    if (runes != null) runes.RevealDroppedRunes();
+
+    // 5. Düşmanları Resetle
+    EnemyBase[] allEnemies = FindObjectsOfType<EnemyBase>(true);
+    foreach (EnemyBase enemy in allEnemies)
+    {
+        enemy.RespawnEnemy();
+    }
+
+    // 6. UI Kapat
+    if (youDiedCanvasGroup != null) youDiedCanvasGroup.alpha = 0f;
+    if (menuCanvas != null) menuCanvas.SetActive(false);
+
+    // 7. Fareyi Oyuna Kitle
+    Cursor.lockState = CursorLockMode.Locked;
+    Cursor.visible = false;
+}
 }
