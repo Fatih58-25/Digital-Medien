@@ -1,8 +1,11 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 public class MainMenuManager : MonoBehaviour
 {
+    private static bool startInGameOnLoad = false;
+
     [Header("UI Canvas")]
     [SerializeField] private GameObject menuCanvas;
 
@@ -14,8 +17,26 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private GameObject hudCanvas;
     [SerializeField] private GameObject settingsPanel;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource backgroundMusic;
+    [SerializeField] private float menuMusicVolume = 0.5f;
+    [SerializeField] private float gameMusicVolume = 0.2f;
+
     private void Start()
     {
+        if (backgroundMusic != null && !backgroundMusic.isPlaying)
+        {
+            backgroundMusic.volume = menuMusicVolume;
+            backgroundMusic.Play();
+        }
+
+        if (startInGameOnLoad)
+        {
+            startInGameOnLoad = false;
+            PlayGame();
+            return;
+        }
+
         if (menuCanvas != null) menuCanvas.SetActive(true);
         if (hudCanvas != null) hudCanvas.SetActive(false);
         if (mainMenuButtons != null) mainMenuButtons.SetActive(true);
@@ -42,6 +63,12 @@ public class MainMenuManager : MonoBehaviour
         Cursor.visible = false;
 
         Time.timeScale = 1f;
+
+        if (backgroundMusic != null)
+        {
+            if (!backgroundMusic.isPlaying) backgroundMusic.Play();
+            backgroundMusic.volume = gameMusicVolume;
+        }
     }
 
     public void QuitGame()
@@ -62,5 +89,13 @@ public class MainMenuManager : MonoBehaviour
         Debug.Log("CloseSettings wurde aufgerufen!");
         if (settingsPanel != null) settingsPanel.SetActive(false);
         if (mainMenuButtons != null) mainMenuButtons.SetActive(true);
+    }
+
+    public void RestartGame()
+    {
+        Debug.Log("RestartGame wurde aufgerufen!");
+        startInGameOnLoad = true;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }

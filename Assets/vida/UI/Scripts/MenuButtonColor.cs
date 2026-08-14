@@ -4,7 +4,7 @@ using TMPro;
 
 public class MenuButtonColor : MonoBehaviour, ISelectHandler, IDeselectHandler, ISubmitHandler, IPointerClickHandler
 {
-    public enum ButtonAction { None, Play, Settings, Quit, Back }
+    public enum ButtonAction { None, Play, Settings, Quit, Back, Restart }
 
     [SerializeField] private TMP_Text label;
     [SerializeField] private Color normalColor = Color.white;
@@ -62,6 +62,9 @@ public class MenuButtonColor : MonoBehaviour, ISelectHandler, IDeselectHandler, 
                 break;
             case ButtonAction.Back:
                 menuManager.CloseSettings();
+                break;
+            case ButtonAction.Restart:
+                menuManager.RestartGame();
                 break;
         }
     }

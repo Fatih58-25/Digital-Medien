@@ -3,7 +3,7 @@ using UnityEngine;
 
 [ExecuteInEditMode]
 [RequireComponent(typeof(TMP_Text))]
-public class EldenRingTextEffect : MonoBehaviour
+public class CurvedText: MonoBehaviour
 {
     public float centerScale = 0.8f;
     public float edgeScale = 1.2f;
@@ -30,7 +30,7 @@ public class EldenRingTextEffect : MonoBehaviour
         float minX = float.MaxValue;
         float maxX = float.MinValue;
 
-        // Bounds berechnen
+      
         for (int i = 0; i < textInfo.characterCount; i++)
         {
             TMP_CharacterInfo c = textInfo.characterInfo[i];
@@ -43,7 +43,6 @@ public class EldenRingTextEffect : MonoBehaviour
         float centerX = (minX + maxX) * 0.5f;
         float halfWidth = Mathf.Max(0.0001f, (maxX - minX) * 0.5f);
 
-        // Vertices manipulieren
         for (int i = 0; i < textInfo.characterCount; i++)
         {
             TMP_CharacterInfo c = textInfo.characterInfo[i];
@@ -72,7 +71,6 @@ public class EldenRingTextEffect : MonoBehaviour
             verts[vertIndex + 3] = pivot + (br - pivot) * scale;
         }
 
-        // Mesh zurückschreiben
         for (int i = 0; i < textInfo.meshInfo.Length; i++)
         {
             textInfo.meshInfo[i].mesh.vertices = textInfo.meshInfo[i].vertices;
