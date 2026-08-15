@@ -69,7 +69,7 @@ public class PlayerCombatSystem : MonoBehaviour
     {
         if (playerHealth != null && playerHealth.IsDead) return;
         if (isStaggered) return;
-
+if (Cursor.visible) return;
         HandleRollInput();
         HandleAttackInput();
         HandleBlockInput();
@@ -245,6 +245,12 @@ public class PlayerCombatSystem : MonoBehaviour
             hit.GetComponentInParent<IDamageable>()?.TakeDamage(attackDamage);
             hit.GetComponentInParent<EnemyBase>()?.ApplyKnockback((hit.transform.position - transform.position).normalized);
         }
+    }
+    // 🟢 YENİ: Seviye atladığımızda hasarı kalıcı olarak artıracak fonksiyon
+    public void UpgradeAttackDamage(int bonusDamage)
+    {
+        attackDamage += bonusDamage;
+        Debug.Log("⚔️ Yeni Hasar Gücü: " + attackDamage);
     }
 
     public bool IsAttacking => isAttacking;

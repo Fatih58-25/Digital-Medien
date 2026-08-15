@@ -2,28 +2,40 @@ using UnityEngine;
 
 public class Bonfire : MonoBehaviour
 {
+    [Header("Bonfire Bilgileri (YENİ)")]
+    public string bonfireName = "İsimsiz Bonfire"; // Fast Travel menüsünde yazacak isim
+    public bool isUnlocked = false;                // Oyuncu burayı yaktı mı/keşfetti mi?
+
     [Header("Bonfire Görsel Ayarları")]
-    [SerializeField] private GameObject unlitSword;   // Alevsiz kılıç nesnesi
-    [SerializeField] private GameObject litSword;     // Alevli kılıç nesnesi
-    [SerializeField] private GameObject fireParticle; // Varsa alev/ışık efekti
+    [SerializeField] private GameObject unlitSword;
+    [SerializeField] private GameObject litSword;
+    [SerializeField] private GameObject fireParticle;
 
     [Header("Kamera & Pozisyon")]
-    [SerializeField] private Transform sitPoint;      // Oyuncunun oturacağı tam nokta
-    [SerializeField] private float maxInteractionDistance = 3.5f; // Emniyet mesafesi
+    [SerializeField] private Transform sitPoint;
+    [SerializeField] private float maxInteractionDistance = 3.5f;
 
-    private bool isLit = false;          // Bonfire yakıldı mı?
-    private bool isPlayerInside = false; // Oyuncu alan içinde mi?
-    private bool isResting = false;      // Şu an oturuyor mu?
+    private bool isLit = false;
+    private bool isPlayerInside = false;
+    private bool isResting = false;
 
     private GameObject playerObj;
     private PlayerHealth playerHealth;
     private PlayerFlaskSystem playerFlaskSystem;
     private CharacterController playerController;
     private Animator playerAnimator;
+    
+    private BonfireUIManager uiManager; // 🟢 YENİ: Menü Yöneticisi
 
     private void Start()
     {
         UpdateBonfireVisuals();
+        
+        // Sahnede UI Manager varsa bul (Canvas'a attığımız script)
+        uiManager = FindObjectOfType<BonfireUIManager>();
+        
+        // Başlangıçta yanıyorsa otomatik açılmış say
+        if (isLit) isUnlocked = true; 
     }
 
     private void OnTriggerEnter(Collider other)
@@ -39,9 +51,9 @@ public class Bonfire : MonoBehaviour
             playerAnimator = playerObj.GetComponentInChildren<Animator>();
 
             if (!isLit)
-                Debug.Log("[E] - Bonfire'ı Yak (Kindle)");
+                Debug.Log("[E] - " + bonfireName + " Yak (Kindle)");
             else
-                Debug.Log("[E] - Bonfire'da Dinlen");
+                Debug.Log("[E] - " + bonfireName + " Dinlen");
         }
     }
 
@@ -50,12 +62,14 @@ public class Bonfire : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             ClearPlayerReference();
+            
+            // Eğer oyuncu alandan çıkarsa (bug vs durumu) UI'ı zorla kapat
+            if (uiManager != null) uiManager.CloseAllPanels();
         }
     }
 
     private void Update()
     {
-        // Mesafe emniyet kontrolü
         if (!isResting && playerObj != null)
         {
             float distance = Vector3.Distance(transform.position, playerObj.transform.position);
@@ -68,7 +82,6 @@ public class Bonfire : MonoBehaviour
 
         if (!isPlayerInside && !isResting) return;
 
-        // E TUŞUNA BASILDIĞINDA
         if (Input.GetKeyDown(KeyCode.E))
         {
             if (!isLit)
@@ -79,18 +92,16 @@ public class Bonfire : MonoBehaviour
             {
                 StartResting();
             }
-            else if (isResting)
-            {
-                StopResting();
-            }
+            // 🟢 YENİ: Artık E'ye tekrar basarak kalkmayı kaldırdım, çünkü UI'dan "Ayrıl" diyerek kalkmalı.
         }
     }
 
     private void KindleBonfire()
     {
         isLit = true;
+        isUnlocked = true; // 🟢 YENİ: Fast Travel listesine eklenebilir hale geldi
         UpdateBonfireVisuals();
-        Debug.Log("🔥 Bonfire Yakıldı!");
+        Debug.Log("🔥 " + bonfireName + " Yakıldı!");
     }
 
     private void StartResting()
@@ -99,17 +110,14 @@ public class Bonfire : MonoBehaviour
 
         isResting = true;
 
-        // Checkpoint Güncelleme
         if (GameManager.Instance != null)
         {
             Vector3 respawnPos = sitPoint != null ? sitPoint.position : transform.position;
             GameManager.Instance.lastCheckpointPosition = respawnPos;
         }
 
-        // Karakter Hareketini Kapat
         if (playerController != null) playerController.enabled = false;
 
-        // Oturma Pozisyonuna Al
         if (sitPoint != null)
         {
             playerObj.transform.position = sitPoint.position;
@@ -123,13 +131,20 @@ public class Bonfire : MonoBehaviour
             playerAnimator.SetBool("IsSitting", true);
         }
 
-        // ❤️ Can, İksir Doldur ve Peşindeki Düşmanları İlk Yerlerine Işınlayıp Agrolarını Sıfırla
         RestorePlayer();
+        
+        // 🟢 YENİ: UI MENÜYÜ AÇ!
+        if (uiManager != null)
+        {
+            uiManager.activeBonfire = this; // UI Manager'a "Şu an bende oturuyor" bilgisini ver
+            uiManager.OpenBonfireMenu();
+        }
 
-        Debug.Log("💤 Bonfire'da dinleniliyor. Düşmanlar resetlendi!");
+        Debug.Log("💤 " + bonfireName + " dinleniliyor. Düşmanlar resetlendi!");
     }
 
-    private void StopResting()
+    // 🟢 YENİ: Bu metodu "public" yaptık ki UI Manager "Ayrıl" butonuna basınca bunu çağırabilsin
+    public void StopResting()
     {
         isResting = false;
 
@@ -137,6 +152,12 @@ public class Bonfire : MonoBehaviour
         {
             playerAnimator.SetBool("IsSitting", false);
             playerAnimator.SetTrigger("StandUpTrigger");
+        }
+        
+        // Menüleri kapat ve fareyi gizle
+        if (uiManager != null)
+        {
+            uiManager.CloseAllPanels();
         }
 
         Invoke(nameof(EnablePlayerControl), 0.8f);
@@ -151,17 +172,9 @@ public class Bonfire : MonoBehaviour
 
     private void RestorePlayer()
     {
-        if (playerHealth != null)
-        {
-            playerHealth.RestoreFullHealth(); 
-        }
+        if (playerHealth != null) playerHealth.RestoreFullHealth(); 
+        if (playerFlaskSystem != null) playerFlaskSystem.RefillFlasks(); 
 
-        if (playerFlaskSystem != null)
-        {
-            playerFlaskSystem.RefillFlasks(); 
-        }
-
-        // 🟢 Sahnedeki tüm düşmanları Resetle (Kovalayanlar kendi spawn noktalarına ışınlanır)
         EnemyBase[] allEnemies = FindObjectsOfType<EnemyBase>(true);
         foreach (EnemyBase enemy in allEnemies)
         {
@@ -184,5 +197,28 @@ public class Bonfire : MonoBehaviour
         if (unlitSword != null) unlitSword.SetActive(!isLit);
         if (litSword != null) litSword.SetActive(isLit);
         if (fireParticle != null) fireParticle.SetActive(isLit);
+    }
+    // 🟢 YENİ: Başka bir bonfire'a ışınlandığımızda eskisinden ayağa kalkma animasyonu 
+    // oynatmadan (sessizce) ayrılmamızı sağlar.
+    public void SilentLeave()
+    {
+        isResting = false;
+        ClearPlayerReference();
+    }
+
+    // 🟢 YENİ: Işınlandığımız yeni Bonfire'a "Ben geldim, beni oturt" mesajı yollar.
+    public void FastTravelArrival(GameObject player)
+    {
+        // Oyuncu referanslarını yeni Bonfire'a tanıtıyoruz (çünkü içine yürüyerek girmedik)
+        playerObj = player;
+        playerHealth = playerObj.GetComponent<PlayerHealth>();
+        playerFlaskSystem = playerObj.GetComponent<PlayerFlaskSystem>();
+        playerController = playerObj.GetComponent<CharacterController>();
+        playerAnimator = playerObj.GetComponentInChildren<Animator>();
+        
+        isPlayerInside = true;
+
+        // Direkt oturma, can fulleme ve menüyü açma döngüsünü başlat!
+        StartResting(); 
     }
 }

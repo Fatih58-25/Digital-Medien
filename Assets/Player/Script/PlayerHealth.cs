@@ -96,4 +96,11 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     currentHealth = maxHealth;
     OnHealthChanged?.Invoke(currentHealth, maxHealth); // UI'ı anında güncelle
 }
+// BONFIRE UI'DAN ÇAĞRILACAK
+    public void UpgradeMaxHealth(int extraHealth)
+    {
+        maxHealth += extraHealth;
+        currentHealth += extraHealth; // Yeni gelen canı mevcut cana da ekle ki bar boş görünmesin
+        OnHealthChanged?.Invoke(currentHealth, maxHealth); // UI'ı güncelle
+    }
 }

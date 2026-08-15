@@ -91,4 +91,13 @@ public class PlayerRunes : MonoBehaviour
             Debug.Log("✨ Yerdeki rünler görünür kılındı!");
         }
     }
+    // Bunu seviye atladığımızda BonfireUIManager çağıracak
+    public void SpendRunes(int amount)
+    {
+        if (currentRunes >= amount)
+        {
+            currentRunes -= amount;
+            UpdateUI();
+        }
+    }
 }

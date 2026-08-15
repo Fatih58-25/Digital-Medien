@@ -7,14 +7,20 @@ public class PlayerHUDManager : MonoBehaviour
     [Header("Player References")]
     [SerializeField] private PlayerHealth playerHealth;
     [SerializeField] private PlayerStamina playerStamina;
-    [SerializeField] private PlayerFlaskSystem playerFlaskSystem; // Sahneden Knight'ı buraya sürükle!
+    [SerializeField] private PlayerFlaskSystem playerFlaskSystem;
 
-    [Header("HP Bar Images (Image Type: Filled)")]
+    [Header("HP Bar UI Elements")]
+    [SerializeField] private RectTransform hpBarContainer; // Barın fiziksel uzunluğunu kontrol edecek obje
     [SerializeField] private Image hpMainFill;
     [SerializeField] private Image hpDamageFill;
 
-    [Header("Stamina Bar Image")]
+    [Header("Stamina Bar UI Elements")]
+    [SerializeField] private RectTransform staminaBarContainer; // Stamina barının çerçevesi
     [SerializeField] private Image staminaMainFill;
+
+    [Header("Dynamic Bar Length Settings (Elden Ring Style)")]
+    [SerializeField] private float pixelsPerHP = 2f; // 1 Can kaç piksel uzunluk yapsın?
+    [SerializeField] private float pixelsPerStamina = 2f; // 1 Stamina kaç piksel?
 
     [Header("Item Slot / Flask UI")]
     [SerializeField] private Image flaskSlotImage;
@@ -50,10 +56,17 @@ public class PlayerHUDManager : MonoBehaviour
         {
             playerFlaskSystem.NotifyUI();
         }
+
+        // 🟢 Oyuna ilk başladığında sarı barı (hasar barını) direkt ana canla aynı seviyeye getir
+        if (hpDamageFill != null && hpMainFill != null)
+        {
+            hpDamageFill.fillAmount = hpMainFill.fillAmount;
+        }
     }
 
     private void Update()
     {
+        // Sarı barın yavaşça erimesini sağlayan fonksiyonu çağır
         HandleDelayedDamageBar();
     }
 
@@ -61,15 +74,35 @@ public class PlayerHUDManager : MonoBehaviour
     {
         targetHpFill = current / max;
         if (hpMainFill != null) hpMainFill.fillAmount = targetHpFill;
-        if (hpDamageFill != null && hpDamageFill.fillAmount < targetHpFill) hpDamageFill.fillAmount = targetHpFill;
+        
+        // 🟢 İyileşme olduğunda veya Seviye Atlandığında (Can yükseldiğinde) sarı barı da anında eşitle
+        if (hpDamageFill != null && hpDamageFill.fillAmount < targetHpFill) 
+        {
+            hpDamageFill.fillAmount = targetHpFill;
+        }
+        
+        // Max cana göre barın uzunluğunu ayarla
+        if (hpBarContainer != null)
+        {
+            hpBarContainer.sizeDelta = new Vector2(max * pixelsPerHP, hpBarContainer.sizeDelta.y);
+        }
+
+        // Hasar aldıysak bekleme süresini baştan başlat
         delayTimer = damageBufferDelay;
     }
 
     private void UpdateStaminaBar(float current, float max)
     {
         if (staminaMainFill != null) staminaMainFill.fillAmount = current / max;
+
+        // Max staminaya göre barın uzunluğunu ayarla
+        if (staminaBarContainer != null)
+        {
+            staminaBarContainer.sizeDelta = new Vector2(max * pixelsPerStamina, staminaBarContainer.sizeDelta.y);
+        }
     }
 
+    // 🟢 (Daha önce üç nokta bıraktığım ve bozulan yerleri tam olarak ekledim)
     private void UpdateFlaskUI(int currentCount, int maxCount, bool isEmpty)
     {
         if (flaskCountText != null)

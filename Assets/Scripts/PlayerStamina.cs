@@ -128,4 +128,11 @@ public class PlayerStamina : MonoBehaviour
         isExhausted = exhausted;
         OnExhaustionStateChanged?.Invoke(isExhausted);
     }
+    // BONFIRE UI'DAN ÇAĞRILACAK
+    public void UpgradeMaxStamina(float extraStamina)
+    {
+        maxStamina += extraStamina;
+        currentStamina += extraStamina; // Yeni staminayı doldur
+        OnStaminaChanged?.Invoke(currentStamina, maxStamina); // UI'ı güncelle
+    }
 }
