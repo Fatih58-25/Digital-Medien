@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: be1ac072484177c47b36fe163faf53e1
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 249706
+  packageName: Stylized Viking
+  packageVersion: 1.1
+  assetPath: Assets/ArtStore3D/Stylized Viking/Anim/Main Camera.controller
+  uploadId: 949816
