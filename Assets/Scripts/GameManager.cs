@@ -17,7 +17,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float delayBeforeGameOverMenu = 3.5f;
 
     [Header("Ana Menü / Game Over Canvas'ı")]
-    [SerializeField] private GameObject menuCanvas; 
+    [SerializeField] private GameObject menuCanvas;
+
+    [Header("Panel-Umschaltung innerhalb des Canvas")]
+    [Tooltip("Das 'GameOver'-Panel (Restart/Quit) unter Vida_Modul/Map/UI/Canvas")]
+    [SerializeField] private GameObject gameOverPanel;
+    [Tooltip("Das 'MainMenuButtons'-Panel, wird beim Game-Over-Screen ausgeblendet")]
+    [SerializeField] private GameObject mainMenuButtonsPanel;
+    [Tooltip("Das 'Victory'-Panel unter Vida_Modul/Map/UI/Canvas")]
+    [SerializeField] private GameObject victoryPanel;
 
     private void Awake()
     {
@@ -103,7 +111,33 @@ public class GameManager : MonoBehaviour
             menuCanvas.SetActive(true);
         }
 
+        // Gezielt auf den Game-Over-Screen umschalten, statt uns auf den
+        // zufaelligen Ausgangszustand der Kind-Panels zu verlassen.
+        if (mainMenuButtonsPanel != null) mainMenuButtonsPanel.SetActive(false);
+        if (gameOverPanel != null) gameOverPanel.SetActive(true);
+
         // 5. Fare imlecini aç
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    // Wird vom Endboss aufgerufen (siehe EnemyBase.Die(), Feld isFinalBoss).
+    public void ShowVictory()
+    {
+        StartCoroutine(VictorySequence());
+    }
+
+    private IEnumerator VictorySequence()
+    {
+        // Kurze Pause, damit z.B. eine Todesanimation/Kamera-Schwenk des Bosses noch laeuft,
+        // bevor der Sieges-Screen einblendet. Bei Bedarf anpassen oder auf 0 setzen.
+        yield return new WaitForSeconds(2f);
+
+        if (menuCanvas != null) menuCanvas.SetActive(true);
+        if (mainMenuButtonsPanel != null) mainMenuButtonsPanel.SetActive(false);
+        if (gameOverPanel != null) gameOverPanel.SetActive(false);
+        if (victoryPanel != null) victoryPanel.SetActive(true);
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
@@ -162,6 +196,8 @@ public class GameManager : MonoBehaviour
     // 6. UI Kapat
     if (youDiedCanvasGroup != null) youDiedCanvasGroup.alpha = 0f;
     if (menuCanvas != null) menuCanvas.SetActive(false);
+    if (gameOverPanel != null) gameOverPanel.SetActive(false);
+    if (mainMenuButtonsPanel != null) mainMenuButtonsPanel.SetActive(true);
 
     // 7. Fareyi Oyuna Kitle
     Cursor.lockState = CursorLockMode.Locked;

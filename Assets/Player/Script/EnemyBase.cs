@@ -5,8 +5,10 @@ using System.Collections;
 public class EnemyBase : MonoBehaviour, IDamageable
 {
     [Header("Boss Settings")]
-    [SerializeField] private bool isBoss = false;              
-    [SerializeField] private string bossName = "Ancient Dragon"; 
+    [SerializeField] private bool isBoss = false;
+    [SerializeField] private string bossName = "Ancient Dragon";
+    [Tooltip("Wenn true, wird beim Tod dieses Gegners GameManager.ShowVictory() ausgeloest (z.B. Malakor oder Hekate).")]
+    [SerializeField] private bool isFinalBoss = false;
 
     [Header("Rune Reward (Rün Ödülü)")]
     [SerializeField] private int runeReward = 100; // Düşman ölünce verilecek rün miktarı
@@ -158,6 +160,11 @@ public class EnemyBase : MonoBehaviour, IDamageable
     }
 
     OnDied?.Invoke();
+
+    if (isFinalBoss)
+    {
+        GameManager.Instance?.ShowVictory();
+    }
 
     UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
     if (agent != null)
