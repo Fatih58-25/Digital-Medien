@@ -174,33 +174,47 @@ public class BonfireUIManager : MonoBehaviour
 
     private void UpdateLevelUpUI()
     {
-        txtCurrentRunes.text = "Current Runes: " + playerRunes.CurrentRunes.ToString();
-        txtRequiredRunes.text = "Required Runes: " + (totalCost > 0 ? totalCost.ToString() : currentCost.ToString());
+        // 🟢 YENİ RENKLERİMİZ (Elden Ring Teması)
+        // Rünler için Koyu Altın / Bakır Rengi (184, 134, 11)
+        Color32 runeColor = new Color32(184, 134, 11, 255); 
+        
+        // Stat metinleri için Soluk Kirli Bej/Sarı (210, 180, 140)
+        Color32 statDefaultColor = new Color32(210, 180, 140, 255); 
+        
+        // Artış yapıldığında yanacak renk (Bunu istersen cam göbeği falan yapabilirsin)
+        Color32 upgradeColor = Color.green; 
+        Color32 whites = Color.white; 
 
-        // 🟢 Artış olan statları vurgulamak için renkler (İstersen Color.cyan veya Color.yellow yapabilirsin)
-        Color defaultColor = Color.white;
-        Color upgradeColor = Color.green;
+        // RÜN METİNLERİ
+        txtCurrentRunes.text = "Runes held: " + playerRunes.CurrentRunes.ToString();
+        txtCurrentRunes.color = runeColor; // Mevcut rün yazısını boyadık
+
+        txtRequiredRunes.text = "Runes required: " + (totalCost > 0 ? totalCost.ToString() : currentCost.ToString());
+        
+        // Rün yetiyorsa Altın rengi, yetmiyorsa Kırmızı
+        if (playerRunes.CurrentRunes >= totalCost + currentCost)
+            txtRequiredRunes.color = runeColor;
+        else
+            txtRequiredRunes.color = Color.red;
+
 
         // VITALITY
         txtVitCurrent.text = vitality.ToString();
+        txtVitCurrent.color = Color.white; // Sol taraftaki mevcut stat rengi
         txtVitPreview.text = tempVitality.ToString();
-        txtVitPreview.color = (tempVitality > vitality) ? upgradeColor : defaultColor;
+        txtVitPreview.color = (tempVitality > vitality) ? upgradeColor : whites;
 
         // ENDURANCE
         txtEndCurrent.text = endurance.ToString();
+        txtEndCurrent.color = Color.white;
         txtEndPreview.text = tempEndurance.ToString();
-        txtEndPreview.color = (tempEndurance > endurance) ? upgradeColor : defaultColor;
+        txtEndPreview.color = (tempEndurance > endurance) ? upgradeColor : whites;
 
         // STRENGTH
         txtStrCurrent.text = strength.ToString();
+        txtStrCurrent.color = Color.white;
         txtStrPreview.text = tempStrength.ToString();
-        txtStrPreview.color = (tempStrength > strength) ? upgradeColor : defaultColor;
-
-        // Rün yeterlilik rengi
-        if (playerRunes.CurrentRunes >= totalCost + currentCost)
-            txtRequiredRunes.color = defaultColor;
-        else
-            txtRequiredRunes.color = Color.red;
+        txtStrPreview.color = (tempStrength > strength) ? upgradeColor : whites;
     }
 
     public void IncreaseVitality() { TryIncreaseStat(ref tempVitality); }
