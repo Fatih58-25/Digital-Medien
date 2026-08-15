@@ -136,52 +136,58 @@ public class EnemyBase : MonoBehaviour, IDamageable
     }
 
     private void Die()
+{
+    if (isDead) return;
+    isDead = true;
+    Debug.Log($"{gameObject.name} ist besiegt!");
+
+    // 🟢 1. AI SCRIPT'INI DIREKT KAPAT (Dönmeyi ve saldırmayı anında keser)
+    SkeletonAI ai = GetComponent<SkeletonAI>();
+    if (ai != null) ai.enabled = false;
+
+    // GARANTİ RÜN VERME
+    PlayerRunes playerRunes = FindObjectOfType<PlayerRunes>();
+    if (playerRunes != null)
     {
-        if (isDead) return;
-        isDead = true;
-        Debug.Log($"{gameObject.name} ist besiegt!");
-
-        // GARANTİ RÜN VERME
-        PlayerRunes playerRunes = FindObjectOfType<PlayerRunes>();
-        if (playerRunes != null)
-        {
-            playerRunes.AddRunes(runeReward);
-            Debug.Log($"🟢 {gameObject.name} öldürüldü! Oyuncuya {runeReward} rün eklendi.");
-        }
-        else
-        {
-            Debug.LogError("❌ HATA: Sahnede PlayerRunes script'ine sahip bir obje bulunamadı!");
-        }
-
-        OnDied?.Invoke();
-
-        UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-        if (agent != null)
-        {
-            agent.isStopped = true;
-            agent.enabled = false;
-        }
-
-        if (animator == null) animator = GetComponentInChildren<Animator>();
-        if (animator != null)
-        {
-            animator.SetTrigger(deathTriggerName);
-        }
-
-        Collider enemyCollider = GetComponent<Collider>();
-        if (enemyCollider != null)
-        {
-            enemyCollider.enabled = false;
-        }
-
-        if (rb != null)
-        {
-            rb.linearVelocity = Vector3.zero;
-            rb.isKinematic = true;
-        }
-
-        StartCoroutine(DisableAfterDeath());
+        playerRunes.AddRunes(runeReward);
+        Debug.Log($"🟢 {gameObject.name} öldürüldü! Oyuncuya {runeReward} rün eklendi.");
     }
+    else
+    {
+        Debug.LogError("❌ HATA: Sahnede PlayerRunes script'ine sahip bir obje bulunamadı!");
+    }
+
+    OnDied?.Invoke();
+
+    UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+    if (agent != null)
+    {
+        agent.isStopped = true;
+        agent.enabled = false;
+    }
+
+    if (animator == null) animator = GetComponentInChildren<Animator>();
+    if (animator != null)
+    {
+        // 🟢 2. ÖNCEKİ SALDIRI TRIGGER'LARINI TEMİZLE (Ölüm animasyonunu kesmesini engeller)
+        animator.ResetTrigger("Attack");
+        animator.SetTrigger(deathTriggerName);
+    }
+
+    Collider enemyCollider = GetComponent<Collider>();
+    if (enemyCollider != null)
+    {
+        enemyCollider.enabled = false;
+    }
+
+    if (rb != null)
+    {
+        rb.linearVelocity = Vector3.zero;
+        rb.isKinematic = true;
+    }
+
+    StartCoroutine(DisableAfterDeath());
+}
 
     private IEnumerator DisableAfterDeath()
     {
@@ -233,7 +239,8 @@ public class EnemyBase : MonoBehaviour, IDamageable
 
     // 🟢 SİHİRLİ SATIR: Eğer düşman ÖLMEMİŞSE ve ŞU AN KAPALIYSA (Pusu düşmanı/Henüz tetiklenmemiş) DOKUNMA!
     if (!isDead && !gameObject.activeSelf) return;
-
+SkeletonAI ai = GetComponent<SkeletonAI>();
+    if (ai != null) ai.enabled = true;
     // 2. Ölüm sonrası gizlenme sayacını ve diğer coroutines sıfırla
     StopAllCoroutines();
 
