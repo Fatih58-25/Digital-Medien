@@ -74,6 +74,11 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
         IsDialogueOpen = true;
         SetPlayerControlEnabled(false);
 
+        // Cursor sichtbar/entsperren, damit Antwort-Buttons per Maus klickbar sind
+        // (waehrend des normalen Gameplays ist der Cursor fuer die Kamerasteuerung gesperrt).
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         if (dialoguePanel != null)
             dialoguePanel.SetActive(true);
 
@@ -224,6 +229,11 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
             dialoguePanel.SetActive(false);
 
         SetPlayerControlEnabled(true);
+
+        // Cursor wieder fuer die normale Kamerasteuerung sperren.
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
         CheckBossFightTriggers();
     }
 
