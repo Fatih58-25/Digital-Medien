@@ -148,6 +148,12 @@ public class BonfireUIManager : MonoBehaviour
         // güvenle kapatıp oyuncuyu "sitPoint" noktasına yerleştirecek ve fiziği güncelleyecektir)
         targetBonfire.FastTravelArrival(player);
 
+        PlayerController pControl = player.GetComponent<PlayerController>();
+        if (pControl != null)
+        {
+            pControl.ResetFallData();
+        }
+
         Debug.Log("✨ " + targetBonfire.bonfireName + " adlı Bonfire'a ışınlanıldı ve oturuldu!");
         
         // Not: Menüyü kapatmamıza veya fareyi gizlememize gerek kalmadı, 

@@ -87,7 +87,7 @@ public class GameManager : MonoBehaviour
             if (col != null) col.enabled = false;
         }
 
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(1.5f);
 
         // 2. YOU DIED Şeridi Yavaşça Gelir
         if (youDiedCanvasGroup != null)
@@ -178,6 +178,8 @@ public class GameManager : MonoBehaviour
     playerObj.transform.position = lastCheckpointPosition;
     Physics.SyncTransforms();
 
+PlayerController pControl = playerObj.GetComponent<PlayerController>();
+        if (pControl != null) pControl.ResetFallData();
     if (controller != null) controller.enabled = true;
 
     // 4. Flask ve Rünler

@@ -17,13 +17,20 @@ public class PlayerController : MonoBehaviour
     [Header("Animation Reference")]
     [SerializeField] private PlayerAnimator playerAnimator;
 
+    [Header("Düşme Hasarı (Fall Damage)")]
+    [SerializeField] private float safeFallDistance = 5.0f; 
+    [SerializeField] private float lethalFallDistance = 15.0f; 
+    [SerializeField] private int maxFallDamage = 1000; 
+
+    private float highestFallY; 
+    private bool wasGrounded;
+
     private CharacterController controller;
     private Transform cameraTransform;
     private SoulsCamera soulsCamera; 
     private Vector3 moveDirection;
     private float verticalVelocity;
 
-    // Referanslar
     private PlayerCombatSystem combatSystem;
     private PlayerStamina playerStamina;
     private PlayerFlaskSystem playerFlaskSystem;
@@ -55,19 +62,21 @@ public class PlayerController : MonoBehaviour
     }
 
     void Update()
-    { if (controller == null || !controller.enabled) return;
+    { 
+        if (controller == null || !controller.enabled) return;
         MovePlayer();
     }
 
     void MovePlayer()
     {
         if (playerHealth != null && playerHealth.IsDead) return;
+        
         bool isAttacking = combatSystem != null && combatSystem.IsAttacking;
+        bool isBlocking = combatSystem != null && combatSystem.IsBlocking; // 🟢 YENİ: Blok durumunu çekiyoruz
         bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
         bool isExhausted = playerStamina != null && playerStamina.IsExhausted;
         bool isRolling = combatSystem != null && combatSystem.IsRolling;
 
-        // Kamera kilitlenme durumunu ve hedefini kontrol et
         bool isLockedOn = soulsCamera != null && soulsCamera.IsLockedOn && soulsCamera.LockedTarget != null;
         Transform lockedTarget = isLockedOn ? soulsCamera.LockedTarget : null;
 
@@ -78,21 +87,19 @@ public class PlayerController : MonoBehaviour
         float currentSpeed = 0f;
         float actualMoveSpeed = moveSpeed;
 
-        // İksir içerken hızı %25'e düşür
         if (isDrinking)
         {
             actualMoveSpeed = moveSpeed * 0.25f;
         }
 
-        // Shift'e basılı tutma kontrolü
         bool wantsToSprint = Input.GetKey(KeyCode.LeftShift) && 
                              (combatSystem == null || (Time.time - combatSystem.shiftPressTime) > 0.2f) && 
                              inputDir.magnitude >= 0.1f &&
                              !isAttacking &&
+                             !isBlocking && // 🟢 YENİ: Blok yaparken koşulmasın
                              !isDrinking &&
                              !isExhausted;
 
-        // Koşma Mantığı
         bool isSprinting = false;
         if (wantsToSprint && playerStamina != null)
         {
@@ -103,7 +110,6 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        // Kamera Yönlerini Hesapla
         Vector3 camForward = cameraTransform.forward;
         camForward.y = 0;
         camForward.Normalize();
@@ -112,10 +118,8 @@ public class PlayerController : MonoBehaviour
         camRight.y = 0;
         camRight.Normalize();
 
-        // ⚔️ 1. SALDIRI ANINDAKİ ROTASYON VE HAREKET
         if (isAttacking)
         {
-            // 🟢 YALNIZCA SALDIRIRKEN düşmana kilitliysek yüzümüzü anında/pürüzsüzce düşmana dönüyoruz
             if (isLockedOn)
             {
                 Vector3 dirToEnemy = lockedTarget.position - transform.position;
@@ -129,7 +133,6 @@ public class PlayerController : MonoBehaviour
 
             if (vertical > 0.1f)
             {
-                // İleri basılıyorsa kilitli hedefe (veya kameraya) doğru hafifçe adımla
                 Vector3 stepDir = isLockedOn ? (lockedTarget.position - transform.position).normalized : camForward;
                 stepDir.y = 0;
                 moveDirection = stepDir * vertical;
@@ -142,13 +145,38 @@ public class PlayerController : MonoBehaviour
                 currentSpeed = 0f;
             }
         }
-        // 🏃 2. NORMAL HAREKET & YUVARLANMA ANINDAKİ ROTASYON
+        // 🛡️ 🟢 YENİ: BLOK YAPARKEN VE KİLİTLİYKEN DÜŞMANA BAKA BAKA YÜRÜME (STRAFE)
+        else if (isBlocking && isLockedOn)
+        {
+            // Yüzümüzü Daima Düşmana Çevir
+            Vector3 dirToEnemy = lockedTarget.position - transform.position;
+            dirToEnemy.y = 0;
+            if (dirToEnemy != Vector3.zero)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(dirToEnemy);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * 2.5f * Time.deltaTime);
+            }
+
+            // Blok yaparken biraz daha yavaş yürümek
+            actualMoveSpeed = moveSpeed * 0.6f; 
+
+            if (inputDir.magnitude >= 0.1f)
+            {
+                // Sağ-Sol-İleri-Geri hareketini kamera açısına göre yap
+                moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
+                currentSpeed = 1f;
+            }
+            else
+            {
+                moveDirection = Vector3.zero;
+                currentSpeed = 0f;
+            }
+        }
+        // 🏃 NORMAL HAREKET & YUVARLANMA
         else if (inputDir.magnitude >= 0.1f)
         {
-            // Hareket yönümüzü kameranın baktığı açıya göre hesapla
             moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
 
-            // 🟢 Kilitli olsak bile yuvarlanırken, yürürken veya koşarken serbestçe Bastığımız Yöne dönüyoruz
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
@@ -169,11 +197,22 @@ public class PlayerController : MonoBehaviour
         }
 
         // ========================================================
-        // ZIPLAMA & YERÇEKİMİ
+        // ZIPLAMA & YERÇEKİMİ (GÜNCELLENDİ)
         // ========================================================
         if (controller.isGrounded)
         {
             verticalVelocity = -2f;
+
+            // Yere basıldığında Animator'deki zıplama bool'unu kapat
+            if (playerAnimator != null)
+            {
+                Animator anim = playerAnimator.GetComponent<Animator>();
+                if (anim != null)
+                {
+                    anim.SetBool("Jump", false);
+                    anim.SetBool("IsJumping", false);
+                }
+            }
             
             if (!isAttacking && !isDrinking && Input.GetButtonDown("Jump"))
             {
@@ -182,6 +221,19 @@ public class PlayerController : MonoBehaviour
                     if (playerStamina.UseStamina(jumpStaminaCost))
                     {
                         verticalVelocity = Mathf.Sqrt(jumpHeight * 5f * gravity);
+
+                        // 🟢 ZIPLAMA ANİMASYONUNU TETİKLE
+                        if (playerAnimator != null)
+                        {
+                            Animator anim = playerAnimator.GetComponent<Animator>();
+                            if (anim != null)
+                            {
+                                anim.SetTrigger("Jump");
+                                anim.SetBool("Jump", true);
+                                anim.SetBool("IsJumping", true);
+                            }
+                            playerAnimator.SetIsGrounded(false);
+                        }
                     }
                 }
             }
@@ -202,5 +254,56 @@ public class PlayerController : MonoBehaviour
         finalMove.y = verticalVelocity;
 
         controller.Move(finalMove * Time.deltaTime);
+
+        HandleFallDamage(controller.isGrounded);
+    }
+
+    private void HandleFallDamage(bool isGrounded)
+    {
+        if (isGrounded && !wasGrounded)
+        {
+            float fallDistance = highestFallY - transform.position.y;
+            Debug.Log($"[Test] Yere değdin! Düşülen Toplam Mesafe: {fallDistance:F1} metre");
+
+            if (fallDistance > safeFallDistance)
+            {
+                ApplyFallDamage(fallDistance);
+            }
+        }
+
+        if (isGrounded)
+        {
+            highestFallY = transform.position.y;
+        }
+        else
+        {
+            if (transform.position.y > highestFallY)
+            {
+                highestFallY = transform.position.y;
+            }
+        }
+
+        wasGrounded = isGrounded;
+    }
+
+    private void ApplyFallDamage(float distance)
+    {
+        if (playerHealth == null) return;
+
+        float excessDistance = distance - safeFallDistance;
+        float lethalRange = lethalFallDistance - safeFallDistance;
+
+        float damageMultiplier = Mathf.Clamp01(excessDistance / lethalRange);
+        int damageToTake = Mathf.RoundToInt(damageMultiplier * maxFallDamage);
+
+        if (damageToTake > 0)
+        {
+            playerHealth.TakeFallDamage(damageToTake); 
+        }
+    }
+
+    public void ResetFallData()
+    {
+        highestFallY = transform.position.y;
     }
 }

@@ -32,6 +32,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     {
         if (isDead) return;
 
+        // Normal hasarlarda i-Frame (takla) koruması çalışır
         if (combatSystem != null && combatSystem.IsInvincible) return;
 
         int finalDamage = damage;
@@ -51,7 +52,31 @@ public class PlayerHealth : MonoBehaviour, IDamageable
             else animator?.SetTrigger("Hit");
         }
 
-        currentHealth -= finalDamage;
+        ApplyDamage(finalDamage);
+    }
+
+    public void TakeDamage(int damage) => TakeDamage(damage, null);
+
+    // 🟢 YENİ: Düşme Hasarı (Takla ve Kalkanı Delip Geçer!)
+    public void TakeFallDamage(int damage)
+    {
+        if (isDead) return;
+
+        Debug.Log($"💥 Yere çakıldın! {damage} düşme hasarı alındı.");
+
+        // Ağır bir düşüşse karakteri yere ser / sendeleterek cezalandır
+        if (combatSystem != null)
+        {
+            combatSystem.ApplyStagger(1.2f, Vector3.zero, 0f); 
+        }
+
+        ApplyDamage(damage);
+    }
+
+    // Ortak hasar düşme ve ölüm kontrolü
+    private void ApplyDamage(int amount)
+    {
+        currentHealth -= amount;
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
 
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
@@ -59,26 +84,24 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         if (currentHealth <= 0) Die();
     }
 
-    public void TakeDamage(int damage) => TakeDamage(damage, null);
-
     private void Die()
-{
-    isDead = true;
-    animator?.SetTrigger("Die");
-
-    // Event'i tetikle
-    OnPlayerDied?.Invoke();
-
-    // 🟢 GARANTİ ÇÖZÜM: GameManager'a doğrudan haber ver!
-    if (GameManager.Instance != null)
     {
-        GameManager.Instance.OnPlayerDiedDirectCall();
+        isDead = true;
+        animator?.SetTrigger("Die");
+
+        // Event'i tetikle
+        OnPlayerDied?.Invoke();
+
+        // 🟢 GARANTİ ÇÖZÜM: GameManager'a doğrudan haber ver!
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnPlayerDiedDirectCall();
+        }
+        else
+        {
+            Debug.LogError("Sahnede GameManager bulunamadı!");
+        }
     }
-    else
-    {
-        Debug.LogError("Sahnede GameManager bulunamadı!");
-    }
-}
 
     public void Heal(int amount)
     {
@@ -89,14 +112,16 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
         OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
-    public void RestoreFullHealth()
-{
-    if (isDead) isDead = false; // Eğer ölü durumu kaldıysa sıfırla
 
-    currentHealth = maxHealth;
-    OnHealthChanged?.Invoke(currentHealth, maxHealth); // UI'ı anında güncelle
-}
-// BONFIRE UI'DAN ÇAĞRILACAK
+    public void RestoreFullHealth()
+    {
+        if (isDead) isDead = false; // Eğer ölü durumu kaldıysa sıfırla
+
+        currentHealth = maxHealth;
+        OnHealthChanged?.Invoke(currentHealth, maxHealth); // UI'ı anında güncelle
+    }
+
+    // BONFIRE UI'DAN ÇAĞRILACAK
     public void UpgradeMaxHealth(int extraHealth)
     {
         maxHealth += extraHealth;

@@ -9,7 +9,7 @@ public class PlayerCombatSystem : MonoBehaviour
 
     [Header("Angriff")]
     [SerializeField] private float attackCooldown = 0.4f;
-    [SerializeField] private float attackAnimationDuration = 1.0f;
+    [SerializeField] private float attackAnimationDuration = 0.2f;
     [SerializeField] private float attackRange = 1.5f;
     [SerializeField] private int attackDamage = 10;
     [SerializeField] private LayerMask enemyLayer;
@@ -48,6 +48,7 @@ public class PlayerCombatSystem : MonoBehaviour
     private int queuedComboIndex = 1;
 
     private bool isAttacking = false;
+    private bool hasQueuedAttack = false; // 🟢 YENİ: Saldırı esnasında tıklanan tıkı hafızada tutar (Input Buffer)
     private bool isStaggered = false;
 
     public float shiftPressTime = 0f;
@@ -69,7 +70,8 @@ public class PlayerCombatSystem : MonoBehaviour
     {
         if (playerHealth != null && playerHealth.IsDead) return;
         if (isStaggered) return;
-if (Cursor.visible) return;
+        if (Cursor.visible) return;
+
         HandleRollInput();
         HandleAttackInput();
         HandleBlockInput();
@@ -78,10 +80,10 @@ if (Cursor.visible) return;
         UpdateComboState();
     }
 
-    // 🟢 RESPAWN OLUNCA SAVAŞ DURUMLARINI TEMİZLE
     public void ResetCombatState()
     {
         isAttacking = false;
+        hasQueuedAttack = false;
         isRolling = false;
         isBlocking = false;
         isStaggered = false;
@@ -100,8 +102,15 @@ if (Cursor.visible) return;
     {
         bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
 
-        if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !isAttacking && !isDrinking && (playerController != null && !playerController.IsDucking))
+        if (Input.GetMouseButtonDown(0) && !isBlocking && !isRolling && !isDrinking && (playerController != null && !playerController.IsDucking))
         {
+            // 🟢 Eğer zaten saldırı yapılıyorsa ve kombo sınırı aşılmadıysa, tıklamayı hafızaya al
+            if (isAttacking)
+            {
+                hasQueuedAttack = true;
+                return;
+            }
+
             if (Time.time - lastAttackTime >= attackCooldown)
             {
                 if (playerStamina != null && playerStamina.HasEnoughStamina(attackStaminaCost))
@@ -159,6 +168,7 @@ if (Cursor.visible) return;
         playerStamina?.UseStamina(attackStaminaCost);
 
         isAttacking = true;
+        hasQueuedAttack = false; // Hafızayı sıfırla
         lastAttackTime = Time.time;
         queuedComboIndex = (currentAttackCombo >= maxComboCount) ? 1 : currentAttackCombo + 1;
 
@@ -200,6 +210,7 @@ if (Cursor.visible) return;
 
         isInvincible = false;
         isAttacking = false;
+        hasQueuedAttack = false;
         isRolling = false;
         if (isBlocking) StopBlocking();
         ResetCombo();
@@ -227,14 +238,42 @@ if (Cursor.visible) return;
     }
 
     private void ResetStagger() => isStaggered = false;
-    private void UpdateAttackState() { if (isAttacking && Time.time - lastAttackTime >= attackAnimationDuration) isAttacking = false; }
+
+    // 🟢 GÜNCELLENDİ: İlk vuruş süresi bittiğinde hafızada tık varsa anında 2. vuruşa geçer
+    private void UpdateAttackState() 
+    { 
+        if (isAttacking && Time.time - lastAttackTime >= attackAnimationDuration) 
+        {
+            if (hasQueuedAttack && playerStamina != null && playerStamina.HasEnoughStamina(attackStaminaCost))
+            {
+                PerformAttack(); // Idle'a DÜŞMEDEN direkt sonraki vuruş!
+            }
+            else
+            {
+                isAttacking = false;
+                hasQueuedAttack = false;
+            }
+        } 
+    }
+
     private void UpdateRollState() 
     { 
         if (isInvincible && Time.time >= iframeEndTime) isInvincible = false; 
         if (isRolling && Time.time >= rollEndTime) isRolling = false; 
     }
-    private void UpdateComboState() { if (Time.time - lastAttackTime > comboResetDelay && currentAttackCombo > 0) ResetCombo(); }
-    private void ResetCombo() { currentAttackCombo = 0; queuedComboIndex = 1; }
+
+    private void UpdateComboState() 
+    { 
+        if (Time.time - lastAttackTime > comboResetDelay && currentAttackCombo > 0 && !isAttacking) 
+            ResetCombo(); 
+    }
+
+    private void ResetCombo() 
+    { 
+        currentAttackCombo = 0; 
+        queuedComboIndex = 1; 
+        hasQueuedAttack = false;
+    }
 
     public void OnAttackHit()
     {
@@ -246,7 +285,7 @@ if (Cursor.visible) return;
             hit.GetComponentInParent<EnemyBase>()?.ApplyKnockback((hit.transform.position - transform.position).normalized);
         }
     }
-    // 🟢 YENİ: Seviye atladığımızda hasarı kalıcı olarak artıracak fonksiyon
+
     public void UpgradeAttackDamage(int bonusDamage)
     {
         attackDamage += bonusDamage;
@@ -256,6 +295,7 @@ if (Cursor.visible) return;
     public bool IsAttacking => isAttacking;
     public bool IsStaggered => isStaggered;
     public bool IsParrying => isBlocking;
+    public bool IsBlocking => isBlocking;
     public float GetParryReduction => isBlocking ? parryReduction : 1f;
     public bool IsRolling => isRolling;
     public bool IsInvincible => isInvincible;
