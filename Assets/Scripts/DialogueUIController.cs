@@ -45,8 +45,10 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
     [Header("Bosskampf-Trigger (GameState-Variablen aus articy)")]
     [Tooltip("Wird ausgeloest, wenn GameState.StartBossFightMalakor beim Dialogende true ist. Im Inspector z.B. mit BossManager.StartFight(malakor) verknuepfen.")]
     public UnityEvent onStartBossFightMalakor;
-    [Tooltip("Wird ausgeloest, wenn GameState.StartBossFightHekate beim Dialogende true ist.")]
+    [Tooltip("Wird ausgeloest, wenn GameState.StartBossFightHekate beim Dialogende true ist (z.B. Silas wird Verbuendeter).")]
     public UnityEvent onStartBossFightHekate;
+    [Tooltip("Separater Trigger fuer den ECHTEN Hekate-Kampfbeginn (GameState.HekateFightStarted), z.B. am Ende der Wahrheits-Konfrontation. Hier z.B. Silas.BossAllegiance.JoinFightAgainst(hekate) verknuepfen.")]
+    public UnityEvent onHekateFightStarted;
 
     private ArticyFlowPlayer flowPlayer;
     private readonly List<Button> currentButtons = new List<Button>();
@@ -243,18 +245,32 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
     private void CheckBossFightTriggers()
     {
         var vars = ArticyGlobalVariables.Default;
-        if (vars == null) return;
+        if (vars == null)
+        {
+            Debug.LogWarning("[DialogueUIController] CheckBossFightTriggers: ArticyGlobalVariables.Default ist null!");
+            return;
+        }
+
+        Debug.Log($"[DialogueUIController] CheckBossFightTriggers: StartBossFightMalakor={vars.GameState.StartBossFightMalakor}, StartBossFightHekate={vars.GameState.StartBossFightHekate}");
 
         if (vars.GameState.StartBossFightMalakor)
         {
             vars.GameState.StartBossFightMalakor = false;
+            Debug.Log("[DialogueUIController] onStartBossFightMalakor wird ausgeloest, Listener-Anzahl: " + onStartBossFightMalakor.GetPersistentEventCount());
             onStartBossFightMalakor?.Invoke();
         }
 
         if (vars.GameState.StartBossFightHekate)
         {
             vars.GameState.StartBossFightHekate = false;
+            Debug.Log("[DialogueUIController] onStartBossFightHekate wird ausgeloest, Listener-Anzahl: " + onStartBossFightHekate.GetPersistentEventCount());
             onStartBossFightHekate?.Invoke();
+        }
+
+        if (vars.GameState.HekateFightStarted)
+        {
+            vars.GameState.HekateFightStarted = false;
+            onHekateFightStarted?.Invoke();
         }
     }
 }
