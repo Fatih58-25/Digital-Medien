@@ -10,6 +10,17 @@ public class EnemyBase : MonoBehaviour, IDamageable
     [Tooltip("Wenn true, wird beim Tod dieses Gegners GameManager.ShowVictory() ausgeloest (z.B. Malakor oder Hekate).")]
     [SerializeField] private bool isFinalBoss = false;
 
+    [Header("Key Reward (Anahtar Ödülü)")]
+    [Tooltip("Eğer işaretliyse, bu düşman öldüğünde oyuncuya anahtar verir.")]
+    [SerializeField] private bool givesKeyOnDeath = false; // Sadece seçtiğin düşmanlarda tikleyeceksin
+    private bool hasGivenKey = false; // Bonfire sonrası tekrar doğarsa 2. kez anahtar vermesin diye
+
+    [Header("Bonfire Spawn Settings (Bonfire Belirme)")]
+    [Tooltip("İşaretliyse bu düşman ölünce sahnedeki belirlenen Bonfire açılır.")]
+    [SerializeField] private bool spawnsBonfireOnDeath = false;
+    [Tooltip("Öldüğünde görünür olacak Bonfire objesi (Sahnede kapalı tutulmalı).")]
+    [SerializeField] private GameObject bonfireToActivate;
+
     [Header("Rune Reward (Rün Ödülü)")]
     [SerializeField] private int runeReward = 100; // Düşman ölünce verilecek rün miktarı
 
@@ -159,7 +170,36 @@ public class EnemyBase : MonoBehaviour, IDamageable
         Debug.LogError("❌ HATA: Sahnede PlayerRunes script'ine sahip bir obje bulunamadı!");
     }
 
+
+
     OnDied?.Invoke();
+
+    if (spawnsBonfireOnDeath && bonfireToActivate != null)
+        {
+            bonfireToActivate.SetActive(true);
+            Debug.Log($"🔥 {gameObject.name} mağlup edildi, Bonfire ortaya çıktı!");
+        }
+
+    if (givesKeyOnDeath && !hasGivenKey)
+        {
+            if (UIInteractionManager.Instance != null)
+            {
+                UIInteractionManager.Instance.GiveKey();
+                hasGivenKey = true; // Anahtar verildi, tekrar doğarsa bir daha vermez
+                Debug.Log($"🔑 {gameObject.name} öldü ve oyuncuya anahtar verildi!");
+            }
+            else
+            {
+                Debug.LogError("❌ HATA: UIInteractionManager.Instance sahnede bulunamadı!");
+            }
+        }
+
+        OnDied?.Invoke();
+
+        if (isFinalBoss)
+        {
+            GameManager.Instance?.ShowVictory();
+        }
 
     if (isFinalBoss)
     {

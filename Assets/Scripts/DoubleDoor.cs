@@ -7,6 +7,9 @@ public class DoubleDoor : MonoBehaviour
     [SerializeField] private Transform leftDoorPivot;
     [SerializeField] private Transform rightDoorPivot;
 
+    [Header("Kilit Sistemi")]
+    [SerializeField] private bool requiresKey = false;
+
     [Header("Açı ve Hız Ayarları")]
     [SerializeField] private float openAngle = 90f;   // Dönüş açısı
     [SerializeField] private float openSpeed = 1.2f;  // Kapının açılma süresi/hızı
@@ -26,6 +29,14 @@ public class DoubleDoor : MonoBehaviour
     {
         if (isPlayerNearby && !isOpen && Input.GetKeyDown(KeyCode.E))
         {
+            // 🟢 EĞER KAPI KİLİTLİYSE VE ANAHTAR YOKSA
+            if (requiresKey && UIInteractionManager.Instance != null && !UIInteractionManager.Instance.hasBossKey)
+            {
+                UIInteractionManager.Instance.ShowLockedMessage(); // "You need a key!" göster
+                return; // Kapıyı açma, metottan çık!
+            }
+
+            // Kapı kilitli değilse veya anahtarımız varsa normal şekilde aç
             StartCoroutine(OpenDoorRoutine());
         }
     }

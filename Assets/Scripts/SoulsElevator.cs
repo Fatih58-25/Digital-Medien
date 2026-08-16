@@ -26,7 +26,7 @@ public class SoulsElevator : MonoBehaviour
     {
         startPosition = transform.position;
 
-        // Şaltere göre hedef pozisyonunu otomatik belirliyoruz, eksi yazmana gerek kalmadı!
+        // Şaltere göre hedef pozisyonunu otomatik belirliyoruz
         if (startFromTopAndGoDown)
         {
             targetPosition = startPosition + (Vector3.down * moveDistance); // Aşağı yönlü
@@ -51,8 +51,12 @@ public class SoulsElevator : MonoBehaviour
 
             lerpTime += Time.deltaTime * (moveSpeed / moveDistance);
             
-            // Pürüzsüz Lerp hareketi
-            transform.position = Vector3.Lerp(start, target, lerpTime);
+            // 🟢 SOULS-LIKE YUMUŞAK GEÇİŞ:
+            // SmoothStep, 0-1 arasındaki zamanı S-eğrisine sokarak kalkışta ve varışta ivme/yavaşlama katar.
+            float smoothT = Mathf.SmoothStep(0f, 1f, lerpTime);
+
+            // Doğrusal lerp yerine yumuşatılmış smoothT kullanıyoruz
+            transform.position = Vector3.Lerp(start, target, smoothT);
 
             if (lerpTime >= 1f)
             {
