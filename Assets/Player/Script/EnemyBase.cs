@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 using System;
 using System.Collections;
 
@@ -7,8 +8,11 @@ public class EnemyBase : MonoBehaviour, IDamageable
     [Header("Boss Settings")]
     [SerializeField] private bool isBoss = false;
     [SerializeField] private string bossName = "Ancient Dragon";
-    [Tooltip("Wenn true, wird beim Tod dieses Gegners GameManager.ShowVictory() ausgeloest (z.B. Malakor oder Hekate).")]
+    [Tooltip("Wenn true, wird beim Tod dieses Gegners GameManager.ShowVictory() ausgeloest (z.B. die wahre Gestalt von Hekate).")]
     [SerializeField] private bool isFinalBoss = false;
+
+    [Tooltip("Wird beim Tod dieses Gegners ausgeloest, unabhaengig von Is Final Boss. Z.B. fuer Malakor: hier Hekates Verrats-Auftritt verknuepfen (HekateBetrayalTrigger.TriggerBetrayal).")]
+    public UnityEvent onDefeated;
 
     [Header("Key Reward (Anahtar Ödülü)")]
     [Tooltip("Eğer işaretliyse, bu düşman öldüğünde oyuncuya anahtar verir.")]
@@ -173,6 +177,7 @@ public class EnemyBase : MonoBehaviour, IDamageable
 
 
     OnDied?.Invoke();
+    onDefeated?.Invoke();
 
     if (spawnsBonfireOnDeath && bonfireToActivate != null)
         {
@@ -194,22 +199,20 @@ public class EnemyBase : MonoBehaviour, IDamageable
             }
         }
 
-        OnDied?.Invoke();
-
         if (isFinalBoss)
         {
             GameManager.Instance?.ShowVictory();
         }
 
-    if (isFinalBoss)
-    {
-        GameManager.Instance?.ShowVictory();
-    }
-
     UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
     if (agent != null)
     {
-        agent.isStopped = true;
+        // isStopped wirft einen Fehler, wenn der Agent gerade nicht auf dem NavMesh steht
+        // (z.B. durch Knockback). Nur setzen, wenn er wirklich aktiv auf dem NavMesh ist.
+        if (agent.isActiveAndEnabled && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+        }
         agent.enabled = false;
     }
 

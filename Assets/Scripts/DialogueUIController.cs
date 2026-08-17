@@ -49,6 +49,8 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
     public UnityEvent onStartBossFightHekate;
     [Tooltip("Separater Trigger fuer den ECHTEN Hekate-Kampfbeginn (GameState.HekateFightStarted), z.B. am Ende der Wahrheits-Konfrontation. Hier z.B. Silas.BossAllegiance.JoinFightAgainst(hekate) verknuepfen.")]
     public UnityEvent onHekateFightStarted;
+    [Tooltip("Wird ausgeloest, wenn GameState.HekateHidden beim Dialogende true ist (z.B. am Ende von Hekates allererstem Gespraech direkt nach dem Intro). Hier Hekate-Objekt -> SetActive(false) verknuepfen.")]
+    public UnityEvent onHekateHidden;
 
     private ArticyFlowPlayer flowPlayer;
     private readonly List<Button> currentButtons = new List<Button>();
@@ -251,7 +253,7 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
             return;
         }
 
-        Debug.Log($"[DialogueUIController] CheckBossFightTriggers: StartBossFightMalakor={vars.GameState.StartBossFightMalakor}, StartBossFightHekate={vars.GameState.StartBossFightHekate}");
+        Debug.Log($"[DialogueUIController] CheckBossFightTriggers: StartBossFightMalakor={vars.GameState.StartBossFightMalakor}, StartBossFightHekate={vars.GameState.StartBossFightHekate}, HekateFightStarted={vars.GameState.HekateFightStarted}, HekateHidden={vars.GameState.HekateHidden}");
 
         if (vars.GameState.StartBossFightMalakor)
         {
@@ -270,7 +272,14 @@ public class DialogueUIController : MonoBehaviour, IArticyFlowPlayerCallbacks
         if (vars.GameState.HekateFightStarted)
         {
             vars.GameState.HekateFightStarted = false;
+            Debug.Log("[DialogueUIController] onHekateFightStarted wird ausgeloest, Listener-Anzahl: " + onHekateFightStarted.GetPersistentEventCount());
             onHekateFightStarted?.Invoke();
+        }
+
+        if (vars.GameState.HekateHidden)
+        {
+            vars.GameState.HekateHidden = false;
+            onHekateHidden?.Invoke();
         }
     }
 }

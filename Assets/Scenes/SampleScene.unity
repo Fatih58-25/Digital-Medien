@@ -418,6 +418,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 19350485}
   m_CullTransparentMesh: 1
+--- !u!1 &22013059
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 22013060}
+  m_Layer: 0
+  m_Name: Silas auftauchen
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &22013060
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 22013059}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -32.58, y: 26.95323, z: 38.35969}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &22152573
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11461,6 +11492,9 @@ MonoBehaviour:
   isBoss: 0
   bossName: Ancient Dragon
   isFinalBoss: 0
+  onDefeated:
+    m_PersistentCalls:
+      m_Calls: []
   givesKeyOnDeath: 0
   spawnsBonfireOnDeath: 0
   bonfireToActivate: {fileID: 0}
@@ -14784,6 +14818,9 @@ MonoBehaviour:
   isBoss: 1
   bossName: Asylum Demon
   isFinalBoss: 0
+  onDefeated:
+    m_PersistentCalls:
+      m_Calls: []
   givesKeyOnDeath: 0
   spawnsBonfireOnDeath: 0
   bonfireToActivate: {fileID: 0}
@@ -14917,6 +14954,7 @@ MonoBehaviour:
   allyLayer: Default
   playerTransform: {fileID: 1337819002999418369}
   followDistance: 3
+  reappearPoint: {fileID: 0}
 --- !u!1 &663739235 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4895646698587507511, guid: 45c40bd6b62ffc4408e9eddcaf07f2c6, type: 3}
@@ -20960,6 +20998,38 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 2749636018686532411, guid: df8c02c20be3e1130b59accf2d5567c3, type: 3}
+--- !u!1 &1025586982
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1025586983}
+  m_Layer: 0
+  m_Name: Hexe_Outro
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1025586983
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1025586982}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.0358425, y: -0.7061978, z: -0.7061978, w: 0.0358425}
+  m_LocalPosition: {x: -30.44, y: 28.95, z: 28.81}
+  m_LocalScale: {x: 183.56015, y: 183.56015, z: 183.56001}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1943697494}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: -174.189}
 --- !u!1 &1026504438
 GameObject:
   m_ObjectHideFlags: 0
@@ -23297,6 +23367,9 @@ MonoBehaviour:
   isBoss: 0
   bossName: Ancient Dragon
   isFinalBoss: 0
+  onDefeated:
+    m_PersistentCalls:
+      m_Calls: []
   givesKeyOnDeath: 1
   spawnsBonfireOnDeath: 0
   bonfireToActivate: {fileID: 0}
@@ -27983,6 +28056,9 @@ MonoBehaviour:
   isBoss: 1
   bossName: Crucible Knight
   isFinalBoss: 0
+  onDefeated:
+    m_PersistentCalls:
+      m_Calls: []
   givesKeyOnDeath: 0
   spawnsBonfireOnDeath: 1
   bonfireToActivate: {fileID: 1767439821}
@@ -28834,7 +28910,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -50.58557, y: -16.81897}
+  m_AnchoredPosition: {x: -50.585327, y: -16.818909}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0, y: 0}
 --- !u!1 &1374976970 stripped
@@ -29761,6 +29837,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 1025586982}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
   onHekateFightStarted:
     m_PersistentCalls:
       m_Calls:
@@ -29769,8 +29857,35 @@ MonoBehaviour:
         m_MethodName: JoinFightAgainst
         m_Mode: 2
         m_Arguments:
-          m_ObjectArgument: {fileID: 1337819002999418369}
+          m_ObjectArgument: {fileID: 1712645415}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Transform, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1943697497}
+        m_TargetAssemblyTypeName: FormSwap, Assembly-CSharp
+        m_MethodName: TransformToTrueForm
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  onHekateHidden:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 830043345383503644}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
@@ -35343,214 +35458,135 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1216916959}
   m_SourcePrefab: {fileID: 100100000, guid: b4a8d5369ba4975fb96afb68d84cd0e7, type: 3}
---- !u!1001 &1714689455
+--- !u!1001 &1712645414
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1647407108}
+    m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: -8700617353114198275, guid: d426d7839263fac89823e740b48d466b, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.8356
+      value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.8356
+      value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.8356
+      value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -11.46
+      value: -30.44
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -450.32
+      value: 27.28
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 11.42
+      value: 28.8
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.035839785
+      value: -0.08213786
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.035839785
+      value: 0.0002116654
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.706198
+      value: -0.9966196
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.706198
+      value: -0.0016811267
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -275.81
+      value: 99.42499
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: -90
+      value: -88.815
       objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 90
+      value: 91.16
       objectReference: {fileID: 0}
-    - target: {fileID: 65702495048144492, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - target: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4821668508847931964, guid: b97234d129813594ca0d978fab19da90, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8388244108896940376, guid: b97234d129813594ca0d978fab19da90, type: 3}
+      propertyPath: m_Name
+      value: Hexe_Transform (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 8388244108896940376, guid: b97234d129813594ca0d978fab19da90, type: 3}
       propertyPath: m_IsActive
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 919132149155446097, guid: d426d7839263fac89823e740b48d466b, type: 3}
-      propertyPath: m_Name
-      value: witch (1)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d426d7839263fac89823e740b48d466b, type: 3}
+    - targetCorrespondingSourceObject: {fileID: 8388244108896940376, guid: b97234d129813594ca0d978fab19da90, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1714689462}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d426d7839263fac89823e740b48d466b, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1714689461}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d426d7839263fac89823e740b48d466b, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1714689460}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d426d7839263fac89823e740b48d466b, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1714689463}
-    - targetCorrespondingSourceObject: {fileID: -7106252506170648407, guid: d426d7839263fac89823e740b48d466b, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1714689459}
-  m_SourcePrefab: {fileID: 100100000, guid: d426d7839263fac89823e740b48d466b, type: 3}
---- !u!4 &1714689456 stripped
+      addedObject: {fileID: 1712645418}
+  m_SourcePrefab: {fileID: 100100000, guid: b97234d129813594ca0d978fab19da90, type: 3}
+--- !u!4 &1712645415 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d426d7839263fac89823e740b48d466b, type: 3}
-  m_PrefabInstance: {fileID: 1714689455}
+  m_CorrespondingSourceObject: {fileID: 270196714797747765, guid: b97234d129813594ca0d978fab19da90, type: 3}
+  m_PrefabInstance: {fileID: 1712645414}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1714689457 stripped
+--- !u!1 &1712645417 stripped
 GameObject:
-  m_CorrespondingSourceObject: {fileID: -7106252506170648407, guid: d426d7839263fac89823e740b48d466b, type: 3}
-  m_PrefabInstance: {fileID: 1714689455}
+  m_CorrespondingSourceObject: {fileID: 8388244108896940376, guid: b97234d129813594ca0d978fab19da90, type: 3}
+  m_PrefabInstance: {fileID: 1712645414}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1714689458 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: d426d7839263fac89823e740b48d466b, type: 3}
-  m_PrefabInstance: {fileID: 1714689455}
-  m_PrefabAsset: {fileID: 0}
---- !u!136 &1714689459
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1714689457}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 0
-  serializedVersion: 2
-  m_Radius: 0.32
-  m_Height: 0.4
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1714689460
+--- !u!114 &1712645418
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1714689458}
+  m_GameObject: {fileID: 1712645417}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 68dd2f59952f73846adb73e8042f86c2, type: 3}
+  m_Script: {fileID: 11500000, guid: a529570c9b4a1064594da6e2746a926b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FormSwap
-  normalForm: {fileID: 1714689457}
-  trueForm: {fileID: 1337819002999418494}
-  matchTransform: 1
---- !u!65 &1714689461
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1714689458}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyBase
+  isBoss: 0
+  bossName: The Liar Witch
+  isFinalBoss: 1
+  onDefeated:
+    m_PersistentCalls:
+      m_Calls: []
+  givesKeyOnDeath: 0
+  spawnsBonfireOnDeath: 0
+  bonfireToActivate: {fileID: 0}
+  runeReward: 100
+  maxHealth: 50
+  knockbackForce: 5
+  damageColor: {r: 1, g: 0, b: 0, a: 1}
+  flashDuration: 0.1
+  deathTriggerName: Die
+  timeBeforeDestroy: 7
+  attackPoint: {fileID: 0}
+  attackRange: 1.5
+  attackDamage: 15
+  playerLayer:
     serializedVersion: 2
     m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 3.47, y: 4.13, z: 7.64}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!136 &1714689462
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1714689458}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 1
-  m_Height: 1
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1714689463
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1714689458}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 77ea98f6819acd24a94475141006e75c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NPCInteractable
-  dialogueStart:
-    instanceId: 0
-    referencingMode: 0
-    lowId: 1616
-    highId: 16777216
-  interactKey: 101
-  interactionPrompt: {fileID: 0}
+  myRenderer: {fileID: 0}
 --- !u!1 &1715132210 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1679406081099758348, guid: f51f3441e33fc43b9bc97d244f2addf8, type: 3}
@@ -40138,6 +40174,7 @@ MonoBehaviour:
   allyLayer: Default
   playerTransform: {fileID: 1337819002999418369}
   followDistance: 3
+  reappearPoint: {fileID: 22013060}
 --- !u!65 &1896441917
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -40291,11 +40328,26 @@ MonoBehaviour:
   isBoss: 1
   bossName: Silas
   isFinalBoss: 0
+  onDefeated:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 492892677981867082, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+        m_TargetAssemblyTypeName: HekateBetrayalTrigger, Assembly-CSharp
+        m_MethodName: TriggerBetrayal
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
   givesKeyOnDeath: 0
   spawnsBonfireOnDeath: 0
   bonfireToActivate: {fileID: 0}
   runeReward: 1000
-  maxHealth: 600
+  maxHealth: 20
   knockbackForce: 5
   damageColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.1
@@ -41257,6 +41309,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   connectedElevator: {fileID: 154411343}
+--- !u!4 &1943697494 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+  m_PrefabInstance: {fileID: 3722507148681728377}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1943697497 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4033763682927650355, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+  m_PrefabInstance: {fileID: 3722507148681728377}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68dd2f59952f73846adb73e8042f86c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FormSwap
 --- !u!64 &1947580982
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -44557,7 +44625,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7159754892437785960}
   m_Layer: 0
-  m_Name: Node_1
+  m_Name: Hexe_Intro
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -45539,9 +45607,6 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 451830400427150204, guid: 730bb09ddf182e24dbd13675a0562342, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1714689456}
-    - targetCorrespondingSourceObject: {fileID: 451830400427150204, guid: 730bb09ddf182e24dbd13675a0562342, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1083101678}
     - targetCorrespondingSourceObject: {fileID: 451830400427150204, guid: 730bb09ddf182e24dbd13675a0562342, type: 3}
       insertIndex: -1
@@ -45791,6 +45856,87 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1001 &3722507148681728377
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1025586983}
+    m_Modifications:
+    - target: {fileID: 367449972541887923, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_Name
+      value: mesh_0
+      objectReference: {fileID: 0}
+    - target: {fileID: 492892677981867082, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: hekateObject
+      value: 
+      objectReference: {fileID: 1025586982}
+    - target: {fileID: 492892677981867082, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: playerTransform
+      value: 
+      objectReference: {fileID: 1369592782}
+    - target: {fileID: 1652490479671740422, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: interactionPrompt
+      value: 
+      objectReference: {fileID: 1395980832}
+    - target: {fileID: 1652490479671740422, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: dialogueStart.lowId
+      value: 1347
+      objectReference: {fileID: 0}
+    - target: {fileID: 4033763682927650355, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: trueForm
+      value: 
+      objectReference: {fileID: 1712645417}
+    - target: {fileID: 4033763682927650355, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: normalForm
+      value: 
+      objectReference: {fileID: 1025586982}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7332022709487147798, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 7b89a78f59075694bab6ebf3b1eaa271, type: 3}
 --- !u!33 &4013914680984712265
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -46285,6 +46431,9 @@ MonoBehaviour:
   isBoss: 1
   bossName: Welcome
   isFinalBoss: 0
+  onDefeated:
+    m_PersistentCalls:
+      m_Calls: []
   givesKeyOnDeath: 0
   spawnsBonfireOnDeath: 0
   bonfireToActivate: {fileID: 0}
@@ -46359,6 +46508,9 @@ MonoBehaviour:
   isBoss: 0
   bossName: Ancient Dragon
   isFinalBoss: 1
+  onDefeated:
+    m_PersistentCalls:
+      m_Calls: []
   givesKeyOnDeath: 0
   spawnsBonfireOnDeath: 0
   bonfireToActivate: {fileID: 0}
@@ -47833,6 +47985,8 @@ SceneRoots:
   - {fileID: 573805795}
   - {fileID: 682306254}
   - {fileID: 7159754892437785960}
+  - {fileID: 1712645414}
+  - {fileID: 1025586983}
   - {fileID: 603563248606072218}
   - {fileID: 42295699}
   - {fileID: 451563509}
@@ -47859,3 +48013,4 @@ SceneRoots:
   - {fileID: 542417647}
   - {fileID: 1709874516}
   - {fileID: 1217123226}
+  - {fileID: 22013060}

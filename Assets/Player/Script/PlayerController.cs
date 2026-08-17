@@ -263,7 +263,7 @@ public class PlayerController : MonoBehaviour
         if (isGrounded && !wasGrounded)
         {
             float fallDistance = highestFallY - transform.position.y;
-            Debug.Log($"[Test] Yere değdin! Düşülen Toplam Mesafe: {fallDistance:F1} metre");
+           // Debug.Log($"[Test] Yere değdin! Düşülen Toplam Mesafe: {fallDistance:F1} metre");
 
             if (fallDistance > safeFallDistance)
             {

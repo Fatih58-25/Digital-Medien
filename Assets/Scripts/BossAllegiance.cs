@@ -15,9 +15,10 @@ using UnityEngine.AI;
 // 5) Am DialogueController-Objekt (Component DialogueUIController):
 //    - On Start Boss Fight Malakor -> dieses Silas-Objekt -> BossAllegiance.BecomeHostile()
 //    - On Start Boss Fight Hekate  -> dieses Silas-Objekt -> BossAllegiance.BecomeAlly()
-// 6) Sobald ihr den echten Hekate-Kampf separat triggert (z.B. eigenes GameState-Flag
-//    "HekateFightStarted", da StartBossFightHekate schon fuer BecomeAlly verbraucht ist),
-//    dort JoinFightAgainst(hekateTransform) auf dieses Objekt haengen.
+// 6) Sobald ihr den echten Hekate-Kampf separat triggert (GameState.HekateFightStarted,
+//    am Ende von Hekates Wahrheits-Konfrontation), dort JoinFightAgainst(hekateTransform)
+//    auf dieses Objekt haengen. Silas ist seit BecomeAlly() unsichtbar (SetActive false)
+//    und taucht in JoinFightAgainst() ploetzlich wieder auf (optional an "Reappear Point").
 [RequireComponent(typeof(NavMeshAgent))]
 public class BossAllegiance : MonoBehaviour
 {
@@ -36,11 +37,13 @@ public class BossAllegiance : MonoBehaviour
     [Tooltip("Layer-Name, den der Boss als Verbuendeter bekommt (leer lassen, um Layer nicht zu aendern).")]
     public string allyLayer = "Default";
 
-    [Header("Begleiten (solange Verbuendeter, aber noch kein Kampf)")]
-    [Tooltip("Transform des Spielers, dem gefolgt wird. Leer lassen, um automatisch per Tag 'Player' zu suchen.")]
+    [Header("Verschwinden / Wiederauftauchen (statt Folgen)")]
+    [Tooltip("Transform des Spielers. Leer lassen, um automatisch per Tag 'Player' zu suchen.")]
     public Transform playerTransform;
-    [Tooltip("Abstand, den Silas beim Folgen zum Spieler haelt.")]
+    [Tooltip("Abstand, den Silas beim (nicht mehr genutzten) Folgen zum Spieler haelt.")]
     public float followDistance = 3f;
+    [Tooltip("Wo Silas wieder auftaucht, wenn der Hekate-Kampf beginnt. Leer lassen, um an der aktuellen Position aufzutauchen.")]
+    public Transform reappearPoint;
 
     private enum State { Neutral, Following, Fighting }
     private State state = State.Neutral;
@@ -49,6 +52,19 @@ public class BossAllegiance : MonoBehaviour
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+    }
+
+    // agent.isStopped wirft einen Fehler, wenn der Agent (noch) nicht auf einem NavMesh
+    // platziert ist (z.B. direkt nachdem das Objekt wieder aktiviert wurde). Diese Methode
+    // verhindert, dass so ein Fehler den Rest von BecomeHostile/BecomeAlly/JoinFightAgainst abbricht.
+    private void SetAgentStopped(bool stopped)
+    {
+        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
+        {
+            Debug.LogWarning($"[BossAllegiance] SetAgentStopped({stopped}) uebersprungen auf '{name}': agent zugewiesen={agent != null}, aktiv={agent != null && agent.isActiveAndEnabled}, isOnNavMesh={agent != null && agent.isOnNavMesh}");
+            return;
+        }
+        agent.isStopped = stopped;
     }
 
     void Update()
@@ -75,7 +91,7 @@ public class BossAllegiance : MonoBehaviour
         state = State.Fighting;
 
         if (aiScript != null) aiScript.enabled = true;
-        if (agent != null) agent.isStopped = false;
+        SetAgentStopped(false);
         if (npcInteractable != null) npcInteractable.enabled = false;
     }
 
@@ -85,7 +101,7 @@ public class BossAllegiance : MonoBehaviour
         state = State.Following;
 
         if (aiScript != null) aiScript.enabled = false;
-        if (agent != null) agent.isStopped = false;
+        SetAgentStopped(false);
 
         if (playerTransform == null)
         {
@@ -104,22 +120,33 @@ public class BossAllegiance : MonoBehaviour
             if (layerIndex >= 0) gameObject.layer = layerIndex;
         }
 
-        // Weiterhin ansprechbar lassen (z.B. fuer einen kleinen Abschieds-/Verbuendeten-Dialog),
-        // daher NPCInteractable hier absichtlich NICHT deaktiviert.
+        // Silas verschwindet, statt sichtbar zu folgen. Er taucht erst beim echten
+        // Hekate-Kampf ueber JoinFightAgainst() wieder auf.
+        gameObject.SetActive(false);
     }
 
     // Wird aufgerufen, sobald der eigentliche Hekate-Kampf beginnt (eigener Trigger noetig,
     // siehe Kommentar oben). Nur sinnvoll, wenn Silas vorher per BecomeAlly() Verbuendeter wurde.
     public void JoinFightAgainst(Transform enemyTarget)
     {
+        Debug.Log($"[BossAllegiance] JoinFightAgainst() auf '{name}' aufgerufen. state={state}, enemyTarget zugewiesen={enemyTarget != null}");
+
         if (state != State.Following) return; // war nie Verbuendeter -> nichts zu tun
 
         state = State.Fighting;
+
+        // Silas war versteckt (siehe BecomeAlly) und taucht jetzt ploetzlich wieder auf.
+        if (reappearPoint != null)
+        {
+            transform.position = reappearPoint.position;
+            transform.rotation = reappearPoint.rotation;
+        }
+        gameObject.SetActive(true);
 
         if (blackboard != null)
             blackboard.player = enemyTarget; // KI-Combat-Nodes nutzen bb.player als Angriffsziel
 
         if (aiScript != null) aiScript.enabled = true;
-        if (agent != null) agent.isStopped = false;
+        SetAgentStopped(false);
     }
 }
