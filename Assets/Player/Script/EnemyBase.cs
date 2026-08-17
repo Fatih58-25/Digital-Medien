@@ -159,6 +159,7 @@ public class EnemyBase : MonoBehaviour, IDamageable
     Debug.Log($"{gameObject.name} ist besiegt!");
 
     // 🟢 1. AI SCRIPT'INI DIREKT KAPAT (Dönmeyi ve saldırmayı anında keser)
+    if (TryGetComponent<RolokarAI>(out var rolokar)) rolokar.enabled = false;
     SkeletonAI ai = GetComponent<SkeletonAI>();
     if (ai != null) ai.enabled = false;
 
