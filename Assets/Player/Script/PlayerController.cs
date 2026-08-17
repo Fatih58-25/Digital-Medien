@@ -210,7 +210,7 @@ public class PlayerController : MonoBehaviour
                 if (anim != null)
                 {
                     anim.SetBool("Jump", false);
-                    anim.SetBool("IsJumping", false);
+                    
                 }
             }
             
@@ -230,7 +230,7 @@ public class PlayerController : MonoBehaviour
                             {
                                 anim.SetTrigger("Jump");
                                 anim.SetBool("Jump", true);
-                                anim.SetBool("IsJumping", true);
+                                
                             }
                             playerAnimator.SetIsGrounded(false);
                         }
