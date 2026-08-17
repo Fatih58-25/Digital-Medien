@@ -200,6 +200,8 @@ public class EnemyBase : MonoBehaviour, IDamageable
             }
         }
 
+        Debug.Log($"[EnemyBase] Die() auf '{gameObject.name}': isFinalBoss={isFinalBoss}, GameManager.Instance zugewiesen={GameManager.Instance != null}");
+
         if (isFinalBoss)
         {
             GameManager.Instance?.ShowVictory();
@@ -257,18 +259,34 @@ public class EnemyBase : MonoBehaviour, IDamageable
 
     public void OnEnemyAttackHit()
     {
+        Debug.Log($"[EnemyBase] OnEnemyAttackHit() auf '{gameObject.name}' aufgerufen. isDead={isDead}, attackPoint zugewiesen={attackPoint != null}, attackRange={attackRange}, playerLayer={LayerMaskToString(playerLayer)}");
+
         if (isDead || attackPoint == null) return;
 
         Collider[] hits = Physics.OverlapSphere(attackPoint.position, attackRange, playerLayer);
+        Debug.Log($"[EnemyBase] OnEnemyAttackHit(): {hits.Length} Collider im Radius gefunden.");
 
         foreach (Collider hit in hits)
         {
             IDamageable damageable = hit.GetComponentInParent<IDamageable>();
+            Debug.Log($"[EnemyBase] Treffer-Kandidat: '{hit.gameObject.name}' (Layer {LayerMask.LayerToName(hit.gameObject.layer)}), IDamageable gefunden={damageable != null}");
             if (damageable != null)
             {
                 damageable.TakeDamage(attackDamage);
             }
         }
+    }
+
+    private static string LayerMaskToString(LayerMask mask)
+    {
+        if (mask.value == 0) return "(leer/Nothing)";
+        var names = new System.Collections.Generic.List<string>();
+        for (int i = 0; i < 32; i++)
+        {
+            if ((mask.value & (1 << i)) != 0)
+                names.Add(LayerMask.LayerToName(i));
+        }
+        return string.Join(", ", names);
     }
 
     private void OnDrawGizmosSelected()
@@ -281,6 +299,20 @@ public class EnemyBase : MonoBehaviour, IDamageable
     }
 
     public void OnAttackHit() { }
+
+    // Manche Animationen (z.B. Hexe_Transform) rufen andere Event-Namen als "OnEnemyAttackHit" auf.
+    // SetAttackStart markiert nur den Beginn des Schwungs (aktuell kein eigenes Verhalten noetig),
+    // SetAttackEnd loest den eigentlichen Trefferschaden aus, genau wie OnEnemyAttackHit.
+    public void SetAttackStart()
+    {
+        Debug.Log($"[EnemyBase] SetAttackStart() auf '{gameObject.name}' aufgerufen.");
+    }
+
+    public void SetAttackEnd()
+    {
+        Debug.Log($"[EnemyBase] SetAttackEnd() auf '{gameObject.name}' aufgerufen, loest Trefferschaden aus.");
+        OnEnemyAttackHit();
+    }
 
     // 🟢 BONFIRE VE RESTART ANINDA ÇAĞRILAN RESPNAWN METODU
    public void RespawnEnemy()
@@ -359,4 +391,20 @@ SkeletonAI ai = GetComponent<SkeletonAI>();
     public int GetMaxHealth => maxHealth;
     public float GetHealthPercentage => (float)currentHealth / maxHealth;
     public bool IsDead => isDead;
+
+    // Wird z.B. von BossAllegiance genutzt: wenn ein Boss (z.B. Silas) zum Verbuendeten wird,
+    // soll seine eigene Kampf-KI nicht mehr ihre eigene Boss-Healthbar anzeigen (das soll dann
+    // nur noch der Gegner tun, gegen den er kaempft).
+    public void SetIsBoss(bool value)
+    {
+        isBoss = value;
+    }
+
+    // Wird z.B. von BossAllegiance genutzt: wenn ein verbuendeter Boss (z.B. Silas) gegen einen
+    // anderen Gegner kaempft, muss sein Angriffs-Treffercheck auf dessen Layer umgestellt werden,
+    // sonst trifft er weiterhin den echten Spieler (playerLayer bleibt sonst immer gleich).
+    public void SetAttackTargetLayer(LayerMask newLayer)
+    {
+        playerLayer = newLayer;
+    }
 }

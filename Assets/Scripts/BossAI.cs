@@ -37,27 +37,46 @@ public class BossCombatNode : Node
 
     private float navmeshRepathTimer = 0f;
     private bool isAttacking = false;
+    private bool hasShownHUD = false;
+    private bool isRetreating = false;
+    private Vector3 retreatDestination;
 
-    public BossCombatNode(SkeletonBlackboard b, MonoBehaviour m) 
-    { 
-        bb = b; 
+    public BossCombatNode(SkeletonBlackboard b, MonoBehaviour m)
+    {
+        bb = b;
         mono = m;
     }
 
-    public override NodeState Evaluate() 
+    public override NodeState Evaluate()
     {
         if (bb.player == null) return NodeState.FAILURE;
-        
+
         Vector3 offset = bb.player.position - bb.transform.position;
         float distSqr = offset.sqrMagnitude;
 
-        if (distSqr > deaggroRangeSqr) 
+        if (distSqr > deaggroRangeSqr)
         {
             ResetBossState();
-            return NodeState.FAILURE; 
+            return NodeState.FAILURE;
+        }
+
+        // Bosslebensbalken einblenden, sobald der Kampf wirklich beginnt.
+        if (!hasShownHUD)
+        {
+            EnemyBase enemyBase = bb.transform.GetComponentInChildren<EnemyBase>();
+            if (enemyBase != null && enemyBase.IsBoss)
+            {
+                BossHUDManager.Instance?.ShowBossHealthBar(enemyBase);
+                hasShownHUD = true;
+            }
         }
 
         HandleTimers();
+
+        if (Time.frameCount % 30 == 0)
+        {
+            Debug.Log($"[BossAI] Evaluate: dist={Mathf.Sqrt(distSqr):F1}, attackRange={Mathf.Sqrt(attackRangeSqr):F1}, cooldown={bb.globalCooldownTimer:F2}, isAttacking={isAttacking}, isRetreating={isRetreating}, agent.isStopped={bb.agent?.isStopped}, agent.isOnNavMesh={bb.agent?.isOnNavMesh}, agent.velocity={bb.agent?.velocity.magnitude:F2}, agent.pathStatus={bb.agent?.pathStatus}");
+        }
 
         if (!isAttacking)
         {
@@ -67,6 +86,13 @@ public class BossCombatNode : Node
         // Saldırı yapılıyorsa Behavior Tree bu node'u RUNNING olarak tutsun
         if (isAttacking)
         {
+            return NodeState.RUNNING;
+        }
+
+        // Fechter-Rueckzug: nach einer Kombo erst zuruecklaufen, bevor sie wieder angreift.
+        if (isRetreating)
+        {
+            ExecuteRetreat();
             return NodeState.RUNNING;
         }
 
@@ -84,6 +110,36 @@ public class BossCombatNode : Node
         return NodeState.RUNNING;
     }
 
+    private void ExecuteRetreat()
+    {
+        if (!IsAgentValid())
+        {
+            isRetreating = false;
+            return;
+        }
+
+        bb.agent.isStopped = false;
+        bb.agent.speed = bb.retreatSpeed;
+
+        if (navmeshRepathTimer <= 0f)
+        {
+            bb.agent.SetDestination(retreatDestination);
+            navmeshRepathTimer = 0.15f;
+        }
+
+        bb.animator.SetFloat("Speed", 1.0f);
+
+        float distToDestSqr = (bb.transform.position - retreatDestination).sqrMagnitude;
+        bool arrived = distToDestSqr < 0.5f;
+        bool pathBlocked = bb.agent.pathStatus == UnityEngine.AI.NavMeshPathStatus.PathPartial
+                         || bb.agent.pathStatus == UnityEngine.AI.NavMeshPathStatus.PathInvalid;
+
+        if (arrived || pathBlocked)
+        {
+            isRetreating = false;
+        }
+    }
+
     #region KOMBO & SALDIRI MANTIĞI
 
     private IEnumerator ExecuteComboRoutine()
@@ -96,35 +152,34 @@ public class BossCombatNode : Node
         // Kaçlı kombo atacağına karar ver
         int comboLimit = Random.Range(bb.minComboCount, bb.maxComboCount + 1);
 
+        float animSpeed = bb.attackAnimSpeed > 0f ? bb.attackAnimSpeed : 1f;
+
         for (int i = 0; i < comboLimit; i++)
         {
-            // Animatör hızının kesinlikle orijinal (1.0) olduğundan emin ol
-            bb.animator.speed = 1.0f;
+            // Animator schneller laufen lassen, damit der Schlag blitzartig wirkt.
+            bb.animator.speed = animSpeed;
 
             // Vurmadan önce oyuncuya doğru anlık dön
             RotateInstantlyToPlayer();
 
             // 1, 2 veya 3 nolu animasyonu rastgele seç
-            int attackType = Random.Range(1, 4); 
+            int attackType = Random.Range(1, 4);
 
             bb.animator.SetInteger("AttackTyp", attackType);
             bb.animator.SetTrigger("Attack");
 
-            // --- HER BİR ANİMASYONUN DOĞAL BİTİŞ SÜRELERİ ---
-            if (attackType == 1) 
+            // --- HER BİR ANİMASYONUN DOĞAL BİTİŞ SÜRELERİ (an animSpeed angepasst) ---
+            if (attackType == 1)
             {
-                // 1. Saldırı animasyonunun bitiş süresi
-                yield return new WaitForSeconds(1.0f); 
+                yield return new WaitForSeconds(1.0f / animSpeed);
             }
-            else if (attackType == 2) 
+            else if (attackType == 2)
             {
-                // 2. Saldırı animasyonunun bitiş süresi (Doğal akış)
-                yield return new WaitForSeconds(1.5f); 
+                yield return new WaitForSeconds(1.5f / animSpeed);
             }
-            else if (attackType == 3) 
+            else if (attackType == 3)
             {
-                // 3. Saldırı animasyonunun bitiş süresi (Doğal akış)
-                yield return new WaitForSeconds(1.4f); 
+                yield return new WaitForSeconds(1.4f / animSpeed);
             }
 
             // Eğer oyuncu kombodan kaçıp çok uzaklaştıysa komboyu yarıda kes
@@ -136,6 +191,18 @@ public class BossCombatNode : Node
         bb.animator.speed = 1.0f;
         bb.globalCooldownTimer = Random.Range(bb.minComboCooldown, bb.maxComboCooldown);
         isAttacking = false;
+
+        // Fechterin-Verhalten: nach der Kombo aktiv zurueckweichen statt stehen zu bleiben.
+        if (bb.retreatAfterCombo && bb.player != null)
+        {
+            Vector3 awayDir = (bb.transform.position - bb.player.position);
+            awayDir.y = 0f;
+            if (awayDir.sqrMagnitude < 0.01f) awayDir = -bb.transform.forward;
+            awayDir.Normalize();
+
+            retreatDestination = bb.transform.position + awayDir * bb.retreatDistance;
+            isRetreating = true;
+        }
     }
 
     private void RotateInstantlyToPlayer()
@@ -191,8 +258,15 @@ public class BossCombatNode : Node
 
     private void ResetBossState()
     {
+        if (hasShownHUD)
+        {
+            BossHUDManager.Instance?.HideBossHealthBar();
+            hasShownHUD = false;
+        }
+
         bb.animator.speed = 1.0f;
         isAttacking = false;
+        isRetreating = false;
         bb.hasTarget = false;
         if (bb.agent != null) bb.agent.updateRotation = true;
     }

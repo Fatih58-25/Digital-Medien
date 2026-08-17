@@ -40,6 +40,16 @@ public float patienceDuration = 5f;                // Oyuncu saldırmazsa kaç s
 // Oyuncunun saldırıp saldırmadığını anlamak için (Oyuncu scriptinde saldırırken bu bool'u true yapmalısın)
 public bool isPlayerAttacking = false;
 
+[Header("Fechter-Verhalten (Rueckzug nach Kombo, z.B. Hekate)")]
+[Tooltip("Wenn an, weicht der Boss nach jeder Kombo aktiv zurueck, statt auf der Stelle zu warten.")]
+public bool retreatAfterCombo = false;
+[Tooltip("Wie weit der Boss beim Rueckzug zuruecklaeuft.")]
+public float retreatDistance = 4f;
+[Tooltip("Wie schnell der Boss beim Rueckzug laeuft.")]
+public float retreatSpeed = 5f;
+[Tooltip("Geschwindigkeits-Multiplikator fuer die Angriffsanimation selbst (1 = normal, 1.5 = 50% schneller/blitzartiger).")]
+public float attackAnimSpeed = 1f;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();

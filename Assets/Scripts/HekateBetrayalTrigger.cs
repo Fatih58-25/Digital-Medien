@@ -24,11 +24,17 @@ public class HekateBetrayalTrigger : MonoBehaviour
     [Tooltip("Transform des Spielers. Leer lassen, um automatisch per Tag 'Player' zu suchen.")]
     public Transform playerTransform;
 
-    [Tooltip("Abstand hinter dem Spieler, an dem Hekate erscheint.")]
+    [Tooltip("Abstand hinter dem Spieler, an dem Hekate erscheint (nur genutzt, wenn Appear Point leer ist).")]
     public float appearDistance = 3f;
+
+    [Tooltip("Fester Punkt in der Szene, an dem Hekate sauber aufrecht erscheinen soll. Wenn gesetzt, wird NICHT relativ zum Spieler berechnet, sondern genau diese Position/Rotation uebernommen (empfohlen).")]
+    public Transform appearPoint;
 
     [Tooltip("Startknoten von Hekates Verrats-Dialog in articy:draft.")]
     public ArticyRef betrayalDialogueStart;
+
+    [Tooltip("Hekates eigenes NPCInteractable (Sprechen (E)). Wird deaktiviert, damit es nicht gleichzeitig mit dem automatischen Dialogstart kollidiert.")]
+    public NPCInteractable npcInteractable;
 
     private bool alreadyTriggered = false;
 
@@ -47,11 +53,21 @@ public class HekateBetrayalTrigger : MonoBehaviour
 
         if (hekateObject != null)
         {
-            if (playerTransform != null)
+            if (appearPoint != null)
             {
-                Vector3 behindPlayer = playerTransform.position - playerTransform.forward * appearDistance;
+                hekateObject.transform.position = appearPoint.position;
+                hekateObject.transform.rotation = appearPoint.rotation;
+            }
+            else if (playerTransform != null)
+            {
+                Vector3 flatForward = playerTransform.forward;
+                flatForward.y = 0f;
+                if (flatForward.sqrMagnitude < 0.001f) flatForward = Vector3.forward;
+                flatForward.Normalize();
+
+                Vector3 behindPlayer = playerTransform.position - flatForward * appearDistance;
                 hekateObject.transform.position = behindPlayer;
-                hekateObject.transform.rotation = Quaternion.LookRotation(playerTransform.position - behindPlayer);
+                hekateObject.transform.rotation = Quaternion.LookRotation(flatForward);
             }
 
             hekateObject.SetActive(true);
@@ -61,6 +77,11 @@ public class HekateBetrayalTrigger : MonoBehaviour
         {
             Debug.LogWarning("[HekateBetrayalTrigger] hekateObject ist NICHT zugewiesen!");
         }
+
+        // Verhindert, dass der Spieler waehrenddessen per "Sprechen (E)" einen zweiten,
+        // ueberschneidenden Dialog auf demselben ArticyFlowPlayer startet.
+        if (npcInteractable != null)
+            npcInteractable.enabled = false;
 
         if (DialogueUIController.Instance != null && betrayalDialogueStart != null)
         {

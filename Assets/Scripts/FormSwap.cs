@@ -28,12 +28,15 @@ public class FormSwap : MonoBehaviour
     [Tooltip("Wenn an, wird trueForm exakt an Position/Rotation von normalForm gesetzt, bevor es erscheint.")]
     public bool matchTransform = true;
 
+    [Tooltip("Zusaetzliche Y-Drehung (in Grad) fuer trueForm, falls ihr Modell eine andere 'Vorne'-Ausrichtung hat als normalForm (z.B. 180, wenn sie mit dem Ruecken zum Spieler steht).")]
+    public float trueFormYRotationOffset = 0f;
+
     public void TransformToTrueForm()
     {
         if (matchTransform && normalForm != null && trueForm != null)
         {
             trueForm.transform.position = normalForm.transform.position;
-            trueForm.transform.rotation = normalForm.transform.rotation;
+            trueForm.transform.rotation = normalForm.transform.rotation * Quaternion.Euler(0f, trueFormYRotationOffset, 0f);
         }
 
         if (normalForm != null) normalForm.SetActive(false);

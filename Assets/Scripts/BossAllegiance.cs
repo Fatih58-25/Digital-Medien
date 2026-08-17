@@ -45,13 +45,19 @@ public class BossAllegiance : MonoBehaviour
     [Tooltip("Wo Silas wieder auftaucht, wenn der Hekate-Kampf beginnt. Leer lassen, um an der aktuellen Position aufzutauchen.")]
     public Transform reappearPoint;
 
+    [Header("Als Verbuendeter kaempfen (JoinFightAgainst)")]
+    [Tooltip("Layer, auf dem der GEGNER liegt, gegen den er als Verbuendeter kaempft (z.B. Hekates wahre Gestalt). Verhindert, dass seine Angriffe stattdessen den echten Spieler treffen.")]
+    public LayerMask allyAttackTargetLayer;
+
     private enum State { Neutral, Following, Fighting }
     private State state = State.Neutral;
     private NavMeshAgent agent;
+    private EnemyBase enemyBase;
 
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        enemyBase = GetComponent<EnemyBase>();
     }
 
     // agent.isStopped wirft einen Fehler, wenn der Agent (noch) nicht auf einem NavMesh
@@ -120,6 +126,9 @@ public class BossAllegiance : MonoBehaviour
             if (layerIndex >= 0) gameObject.layer = layerIndex;
         }
 
+        // Als Verbuendeter zeigt seine eigene KI nicht mehr seine eigene Boss-Healthbar an.
+        if (enemyBase != null) enemyBase.SetIsBoss(false);
+
         // Silas verschwindet, statt sichtbar zu folgen. Er taucht erst beim echten
         // Hekate-Kampf ueber JoinFightAgainst() wieder auf.
         gameObject.SetActive(false);
@@ -146,7 +155,15 @@ public class BossAllegiance : MonoBehaviour
         if (blackboard != null)
             blackboard.player = enemyTarget; // KI-Combat-Nodes nutzen bb.player als Angriffsziel
 
+        // Angriffs-Treffercheck auf den Gegner-Layer umstellen, sonst trifft er weiterhin
+        // den echten Spieler (playerLayer in EnemyBase bleibt sonst auf "Player" stehen).
+        if (enemyBase != null && allyAttackTargetLayer.value != 0)
+            enemyBase.SetAttackTargetLayer(allyAttackTargetLayer);
+
         if (aiScript != null) aiScript.enabled = true;
         SetAgentStopped(false);
+
+        // Waehrend des echten Kampfes soll kein Dialog mehr mit ihm moeglich sein.
+        if (npcInteractable != null) npcInteractable.enabled = false;
     }
 }
