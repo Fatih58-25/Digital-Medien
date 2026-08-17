@@ -36,13 +36,23 @@ public class HekateBetrayalTrigger : MonoBehaviour
     [Tooltip("Hekates eigenes NPCInteractable (Sprechen (E)). Wird deaktiviert, damit es nicht gleichzeitig mit dem automatischen Dialogstart kollidiert.")]
     public NPCInteractable npcInteractable;
 
+    [Tooltip("Malakors BossAllegiance-Komponente. Wenn er jemals Verbuendeter wurde (Zuhoeren-Pfad), wird der Verrats-Dialog NICHT ausgeloest, selbst wenn er anschliessend im Kampf stirbt.")]
+    public BossAllegiance malakorAllegiance;
+
     private bool alreadyTriggered = false;
 
     public void TriggerBetrayal()
     {
-        Debug.Log($"[HekateBetrayalTrigger] TriggerBetrayal() aufgerufen auf '{name}'. alreadyTriggered={alreadyTriggered}, hekateObject zugewiesen={hekateObject != null}, playerTransform zugewiesen={playerTransform != null}, betrayalDialogueStart zugewiesen={betrayalDialogueStart != null}");
+        Debug.Log($"[HekateBetrayalTrigger] TriggerBetrayal() aufgerufen auf '{name}'. alreadyTriggered={alreadyTriggered}, hekateObject zugewiesen={hekateObject != null}, playerTransform zugewiesen={playerTransform != null}, betrayalDialogueStart zugewiesen={betrayalDialogueStart != null}, malakorAllegiance.BecameAlly={malakorAllegiance?.BecameAlly}");
 
         if (alreadyTriggered) return;
+
+        if (malakorAllegiance != null && malakorAllegiance.BecameAlly)
+        {
+            Debug.Log("[HekateBetrayalTrigger] Malakor war Verbuendeter (Zuhoeren-Pfad), Verrats-Dialog wird uebersprungen.");
+            return;
+        }
+
         alreadyTriggered = true;
 
         if (playerTransform == null)

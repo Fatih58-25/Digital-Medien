@@ -54,6 +54,11 @@ public class BossAllegiance : MonoBehaviour
     private NavMeshAgent agent;
     private EnemyBase enemyBase;
 
+    // Wird von HekateBetrayalTrigger geprueft: der automatische Verrats-Dialog soll nur
+    // laufen, wenn der Spieler Malakor besiegt hat, NICHT wenn er als Verbuendeter im
+    // Kampf gegen Hekate stirbt.
+    public bool BecameAlly { get; private set; } = false;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -105,6 +110,7 @@ public class BossAllegiance : MonoBehaviour
     public void BecomeAlly()
     {
         state = State.Following;
+        BecameAlly = true;
 
         if (aiScript != null) aiScript.enabled = false;
         SetAgentStopped(false);

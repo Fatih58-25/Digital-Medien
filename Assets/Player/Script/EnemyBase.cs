@@ -269,6 +269,14 @@ public class EnemyBase : MonoBehaviour, IDamageable
         foreach (Collider hit in hits)
         {
             IDamageable damageable = hit.GetComponentInParent<IDamageable>();
+
+            // Niemals sich selbst treffen, egal wie die Hierarchie/Root-Struktur aussieht.
+            if (damageable != null && ReferenceEquals(damageable, this))
+            {
+                Debug.Log($"[EnemyBase] Treffer-Kandidat '{hit.gameObject.name}' ist ich selbst, wird ignoriert.");
+                continue;
+            }
+
             Debug.Log($"[EnemyBase] Treffer-Kandidat: '{hit.gameObject.name}' (Layer {LayerMask.LayerToName(hit.gameObject.layer)}), IDamageable gefunden={damageable != null}");
             if (damageable != null)
             {
