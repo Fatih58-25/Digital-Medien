@@ -58173,7 +58173,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: attackDamage
-      value: 250
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7604660470900541941, guid: ea7fd32778d1aa343a58d1ff0863b9f0, type: 3}
       propertyPath: rollCooldown
