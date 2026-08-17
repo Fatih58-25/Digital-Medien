@@ -18,9 +18,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private PlayerAnimator playerAnimator;
 
     [Header("Düşme Hasarı (Fall Damage)")]
-    [SerializeField] private float safeFallDistance = 5.0f; 
-    [SerializeField] private float lethalFallDistance = 15.0f; 
-    [SerializeField] private int maxFallDamage = 1000; 
+    [SerializeField] private float safeFallDistance = 5.0f;    // Hasarsız düşülebilecek max mesafe
+    [SerializeField] private float lethalFallDistance = 15.0f;  // Tamamen ölünen mesafe
+    [SerializeField] private float maxFallDamage = 100f;        // 1000 yerine 100 yapıldı (Can barına uygun)
+    
+    [Header("Boşluk Sınırı (Void Limit)")]
+    [SerializeField] private float voidYLevel = -50.0f;        // Bu Y yüksekliğinin altına düşerse anında ölür
 
     private float highestFallY; 
     private bool wasGrounded;
@@ -59,6 +62,8 @@ public class PlayerController : MonoBehaviour
             cameraTransform = Camera.main.transform;
             soulsCamera = Camera.main.GetComponent<SoulsCamera>(); 
         }
+
+        highestFallY = transform.position.y;
     }
 
     void Update()
@@ -72,7 +77,7 @@ public class PlayerController : MonoBehaviour
         if (playerHealth != null && playerHealth.IsDead) return;
         
         bool isAttacking = combatSystem != null && combatSystem.IsAttacking;
-        bool isBlocking = combatSystem != null && combatSystem.IsBlocking; // 🟢 YENİ: Blok durumunu çekiyoruz
+        bool isBlocking = combatSystem != null && combatSystem.IsBlocking;
         bool isDrinking = playerFlaskSystem != null && playerFlaskSystem.IsDrinking;
         bool isExhausted = playerStamina != null && playerStamina.IsExhausted;
         bool isRolling = combatSystem != null && combatSystem.IsRolling;
@@ -96,7 +101,7 @@ public class PlayerController : MonoBehaviour
                              (combatSystem == null || (Time.time - combatSystem.shiftPressTime) > 0.2f) && 
                              inputDir.magnitude >= 0.1f &&
                              !isAttacking &&
-                             !isBlocking && // 🟢 YENİ: Blok yaparken koşulmasın
+                             !isBlocking &&
                              !isDrinking &&
                              !isExhausted;
 
@@ -145,10 +150,8 @@ public class PlayerController : MonoBehaviour
                 currentSpeed = 0f;
             }
         }
-        // 🛡️ 🟢 YENİ: BLOK YAPARKEN VE KİLİTLİYKEN DÜŞMANA BAKA BAKA YÜRÜME (STRAFE)
         else if (isBlocking && isLockedOn)
         {
-            // Yüzümüzü Daima Düşmana Çevir
             Vector3 dirToEnemy = lockedTarget.position - transform.position;
             dirToEnemy.y = 0;
             if (dirToEnemy != Vector3.zero)
@@ -157,12 +160,10 @@ public class PlayerController : MonoBehaviour
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * 2.5f * Time.deltaTime);
             }
 
-            // Blok yaparken biraz daha yavaş yürümek
             actualMoveSpeed = moveSpeed * 0.6f; 
 
             if (inputDir.magnitude >= 0.1f)
             {
-                // Sağ-Sol-İleri-Geri hareketini kamera açısına göre yap
                 moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
                 currentSpeed = 1f;
             }
@@ -172,7 +173,6 @@ public class PlayerController : MonoBehaviour
                 currentSpeed = 0f;
             }
         }
-        // 🏃 NORMAL HAREKET & YUVARLANMA
         else if (inputDir.magnitude >= 0.1f)
         {
             moveDirection = (camForward * inputDir.z) + (camRight * inputDir.x);
@@ -196,21 +196,17 @@ public class PlayerController : MonoBehaviour
             currentSpeed = 0f;
         }
 
-        // ========================================================
-        // ZIPLAMA & YERÇEKİMİ (GÜNCELLENDİ)
-        // ========================================================
+        // ZIPLAMA & YERÇEKİMİ
         if (controller.isGrounded)
         {
             verticalVelocity = -2f;
 
-            // Yere basıldığında Animator'deki zıplama bool'unu kapat
             if (playerAnimator != null)
             {
                 Animator anim = playerAnimator.GetComponent<Animator>();
                 if (anim != null)
                 {
                     anim.SetBool("Jump", false);
-                    
                 }
             }
             
@@ -222,7 +218,6 @@ public class PlayerController : MonoBehaviour
                     {
                         verticalVelocity = Mathf.Sqrt(jumpHeight * 5f * gravity);
 
-                        // 🟢 ZIPLAMA ANİMASYONUNU TETİKLE
                         if (playerAnimator != null)
                         {
                             Animator anim = playerAnimator.GetComponent<Animator>();
@@ -230,7 +225,6 @@ public class PlayerController : MonoBehaviour
                             {
                                 anim.SetTrigger("Jump");
                                 anim.SetBool("Jump", true);
-                                
                             }
                             playerAnimator.SetIsGrounded(false);
                         }
@@ -255,15 +249,27 @@ public class PlayerController : MonoBehaviour
 
         controller.Move(finalMove * Time.deltaTime);
 
+        // Düşme Mantığı Kontrolü
         HandleFallDamage(controller.isGrounded);
     }
 
     private void HandleFallDamage(bool isGrounded)
     {
+        // 🟢 1. BOŞLUĞA DÜŞME KONTROLÜ (Void Check)
+        if (transform.position.y < voidYLevel)
+        {
+            if (playerHealth != null && !playerHealth.IsDead)
+            {
+                // Boşluğa düşerse anında öldür (veya devasa hasar ver)
+                playerHealth.TakeFallDamage(99999);
+            }
+            return;
+        }
+
+        // 🟢 2. YERE İNİŞ ANINDA HASAR HESAPLAMA
         if (isGrounded && !wasGrounded)
         {
             float fallDistance = highestFallY - transform.position.y;
-           // Debug.Log($"[Test] Yere değdin! Düşülen Toplam Mesafe: {fallDistance:F1} metre");
 
             if (fallDistance > safeFallDistance)
             {
@@ -271,12 +277,14 @@ public class PlayerController : MonoBehaviour
             }
         }
 
+        // 🟢 3. YÜKSEKLİK TAKİBİ
         if (isGrounded)
         {
             highestFallY = transform.position.y;
         }
         else
         {
+            // Zıplarken veya havada yukarı doğru fırlarken en yüksek noktayı güncelle
             if (transform.position.y > highestFallY)
             {
                 highestFallY = transform.position.y;
@@ -293,7 +301,12 @@ public class PlayerController : MonoBehaviour
         float excessDistance = distance - safeFallDistance;
         float lethalRange = lethalFallDistance - safeFallDistance;
 
+        if (lethalRange <= 0f) return;
+
+        // 0.0 (güvenli) ile 1.0 (ölümcül) arasında oran hesapla
         float damageMultiplier = Mathf.Clamp01(excessDistance / lethalRange);
+        
+        // Hasarı hesapla (Örn: maxFallDamage 100 ise 10m ekstra düşüş 100 HP götürür)
         int damageToTake = Mathf.RoundToInt(damageMultiplier * maxFallDamage);
 
         if (damageToTake > 0)
